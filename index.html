@@ -43,6 +43,8 @@ h1{font-size:clamp(1.9rem,7vw,2.55rem);line-height:1.1;letter-spacing:-.045em;ma
 .daypick{display:flex;gap:7px;align-items:center}.daypick input{min-width:0;flex:1;border:1px solid var(--edge);border-radius:10px;background:white;padding:10px;color:var(--ink);max-width:190px}.daypick .btn{padding:8px 11px;min-height:40px}
 .hr{height:1px;background:var(--edge);margin:15px 0}.exportBtns{display:grid;grid-template-columns:1fr 1fr;gap:9px}.importLabel{display:inline-flex;align-items:center;justify-content:center}
 footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;line-height:1.5}
+.timer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.timer-box{border:1px solid var(--edge);background:#f5faf8;border-radius:15px;padding:13px;min-width:0}.timer-box h3{margin:0 0 5px}.timer-readout{font-weight:850;font-size:clamp(1.45rem,6vw,1.95rem);letter-spacing:-.045em;line-height:1.3;font-variant-numeric:tabular-nums}.timer-readout.expired{color:var(--danger)}.timer-desc{font-size:.76rem;color:var(--muted);line-height:1.4;min-height:30px;margin:4px 0 10px}.timer-panel{background:#f1f8f6;border:1px solid #c8dfda;border-radius:14px;padding:13px;margin:0 0 16px}.timer-panel .timer-readout{font-size:2.15rem}.timer-panel .timer-desc{min-height:auto}.timer-panel .row{margin:10px 0 0}.timer-panel .btn{padding:10px 13px}.timer-panel .fineprint{margin:10px 0 0}.timer-message{font-size:.79rem;line-height:1.5;margin:7px 0 0;min-height:18px;color:var(--teal)}.timer-message.error{color:var(--danger)}
+@media(max-width:380px){.timer-grid{gap:7px}.timer-box{padding:10px}.timer-box .btn{font-size:.75rem;padding:9px 7px;min-height:43px}}
 @media(max-width:380px){.shell{padding-left:11px;padding-right:11px}.panel{padding:15px}.item{padding:10px}.item-actions{flex-direction:column}.form-grid{gap:0 8px}.quick{gap:6px}.quick button{font-size:.72rem}}
 @media print{.nav,.quick,.tabs,.btn,.item-actions{display:none!important}.view{display:block!important}.shell{padding:0}.panel{box-shadow:none;page-break-inside:avoid}}
 </style>
@@ -107,6 +109,24 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
     </div>
   </div>
   <div class="panel">
+    <div class="sectionhead"><h2>Aktive timere</h2><span class="subtle small">Deles på begge telefoner</span></div>
+    <div class="timer-grid">
+      <div class="timer-box">
+        <h3>Amning</h3>
+        <div class="timer-readout" data-clock="breast">00:00</div>
+        <p class="timer-desc" data-detail="breast">Ingen amning i gang</p>
+        <button type="button" class="btn soft" data-open-timer="breast">Åbn amningstimer</button>
+      </div>
+      <div class="timer-box">
+        <h3>Flaske</h3>
+        <div class="timer-readout" data-clock="bottle">60:00</div>
+        <p class="timer-desc" data-detail="bottle">Ingen flasketimer i gang</p>
+        <button type="button" class="btn soft" data-open-timer="bottle">Åbn flasketimer</button>
+      </div>
+    </div>
+    <p class="fineprint" style="margin-bottom:0">Nedtællingen vises, mens appen er åben. Der sendes ikke alarm, når appen er lukket.</p>
+  </div>
+  <div class="panel">
     <div class="sectionhead"><h2>Seneste registreringer</h2><button class="btn plain" data-go="historik">Se alle</button></div>
     <p class="subtle small" id="last-feed">Seneste måltid: ikke registreret.</p>
     <div id="recent-list" class="item-list"></div>
@@ -125,6 +145,16 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
     <form id="entry-form">
       <div class="field"><label for="time">Dato og tidspunkt</label><input type="datetime-local" id="time" required></div>
       <div id="fields-bottle">
+        <div class="timer-panel">
+          <h3>Flaskens 60-minutters timer</h3>
+          <div class="timer-readout" data-clock="bottle">60:00</div>
+          <p class="timer-desc" data-detail="bottle">Start, når Alina begynder at drikke af flasken.</p>
+          <div class="row">
+            <button type="button" class="btn primary" data-timer-action="bottle-start">Start 1 time</button>
+            <button type="button" class="btn danger hidden" data-timer-action="bottle-finish">Afslut timer</button>
+          </div>
+          <p class="fineprint">Timeren tæller fra begyndelsen af flaskemåltidet. Når I er færdige, notér den faktisk drukne mængde nedenfor. En timer kan ikke afgøre, om mælk er sikker at bruge.</p>
+        </div>
         <div class="form-grid">
           <div class="field"><label for="milk-kind">Mælketype</label><select id="milk-kind"><option value="Modermælk">Modermælk</option><option value="MME">MME</option><option value="Blandet">Blandet</option><option value="Sonde">Sonde</option></select></div>
           <div class="field"><label for="taken">Drukket / givet (ml)</label><input id="taken" type="number" min="1" max="1000" step="1" inputmode="numeric" placeholder="Fx 70"></div>
@@ -132,6 +162,17 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
         </div>
       </div>
       <div id="fields-breast" class="hidden">
+        <div class="timer-panel">
+          <h3>Amningens start/stop-timer</h3>
+          <div class="timer-readout" data-clock="breast">00:00</div>
+          <p class="timer-desc" data-detail="breast">Vælg bryst nedenfor, og start timeren.</p>
+          <div class="row">
+            <button type="button" class="btn primary" data-timer-action="breast-start">Start amning</button>
+            <button type="button" class="btn primary hidden" data-timer-action="breast-finish">Stop og registrér</button>
+            <button type="button" class="btn danger hidden" data-timer-action="breast-cancel">Annullér</button>
+          </div>
+          <p class="fineprint">Start/stop registrerer automatisk tidspunkt og varighed i den fælles historik. Manuel indtastning nedenfor er stadig mulig.</p>
+        </div>
         <div class="form-grid">
           <div class="field"><label for="breast-side">Bryst</label><select id="breast-side"><option value="Begge">Begge</option><option value="Venstre">Venstre</option><option value="Højre">Højre</option></select></div>
           <div class="field"><label for="minutes">Varighed (min)</label><input id="minutes" type="number" min="1" max="180" step="1" inputmode="numeric" placeholder="Fx 15"></div>
@@ -150,6 +191,7 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
         <button class="btn hidden" type="button" id="cancel-edit">Annuller redigering</button>
       </div>
       <p id="form-notice" class="notice" role="status"></p>
+      <p id="timer-notice" class="timer-message" role="status"></p>
     </form>
   </div>
 </section>
@@ -220,6 +262,7 @@ const supabaseClient=window.supabase?.createClient(API_URL,API_KEY,{
   auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
 });
 let user=null, family=null, entries=[],settings={weight:2610,factor:180,feeds:8},kind='bottle',editing=null,pending=false,refreshing=false;
+let activeTimers={breast:null,bottle:null},timerPending=false;
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>Number(n).toLocaleString('da-DK',{maximumFractionDigits:1});
 const localDay=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -260,8 +303,78 @@ function view(view){
  window.scrollTo({top:0,behavior:'instant'});
 }
 function showGate(mode){
+ activeTimers={breast:null,bottle:null};tickTimers();
  $('cloud-gate').classList.remove('hidden');$('app-main').classList.add('hidden');$('main-nav').classList.add('hidden');$('cloud-account').classList.add('hidden');
  $('auth-pane').classList.toggle('hidden',mode!=='auth');$('family-pane').classList.toggle('hidden',mode!=='family');
+}
+function timerFormat(totalSeconds){
+ const minutes=Math.floor(totalSeconds/60),seconds=totalSeconds%60;
+ return String(minutes).padStart(2,'0')+':'+String(seconds).padStart(2,'0');
+}
+function tickTimers(){
+ for(const k of ['breast','bottle']){
+  const timer=activeTimers[k],elapsed=timer?Math.max(0,Math.floor((Date.now()-Date.parse(timer.started_at))/1000)):0;
+  const expired=k==='bottle'&&timer&&elapsed>=3600;
+  const clock=k==='breast'?timerFormat(elapsed):timerFormat(timer?Math.max(0,3600-elapsed):3600);
+  const detail=!timer?(k==='breast'?'Ingen amning i gang':'Ingen flasketimer i gang'):
+    (k==='breast'?('Start kl. '+humanClock(asDate(timer.started_at))+' · '+timer.breast_side):
+       (expired?'Tiden er gået – kassér eventuelle MME-rester.':'Start kl. '+humanClock(asDate(timer.started_at))+' · '+Math.ceil((3600-elapsed)/60)+' min tilbage'));
+  document.querySelectorAll('[data-clock="'+k+'"]').forEach(el=>{el.textContent=clock;el.classList.toggle('expired',Boolean(expired))});
+  document.querySelectorAll('[data-detail="'+k+'"]').forEach(el=>el.textContent=detail);
+ }
+ for(const [action,show] of Object.entries({
+   'breast-start':!activeTimers.breast,'breast-finish':!!activeTimers.breast,
+   'breast-cancel':!!activeTimers.breast,'bottle-start':!activeTimers.bottle,
+   'bottle-finish':!!activeTimers.bottle
+ })){
+  document.querySelectorAll('[data-timer-action="'+action+'"]').forEach(el=>{el.classList.toggle('hidden',!show);el.disabled=timerPending||!family});
+ }
+}
+async function refreshTimers(){
+ if(!family||!supabaseClient)return;
+ const res=await supabaseClient.from('alina_timers').select('family_id,timer_kind,started_at,breast_side,started_by').eq('family_id',family.id);
+ if(res.error)throw res.error;
+ activeTimers={breast:null,bottle:null};
+ for(const timer of res.data)activeTimers[timer.timer_kind]=timer;
+ tickTimers();
+}
+async function runTimer(action){
+ if(!family||timerPending||pending)return;
+ timerPending=true;tickTimers();info('Opdaterer timeren…','timer-notice');
+ try{
+  if(action==='breast-start'||action==='bottle-start'){
+   const which=action==='breast-start'?'breast':'bottle';
+   const row={family_id:family.id,timer_kind:which,started_by:user.id};
+   if(which==='breast')row.breast_side=$('breast-side').value;
+   const res=await supabaseClient.from('alina_timers').insert(row).select('started_at').single();
+   if(res.error)throw res.error;
+   if(which==='bottle')$('time').value=localTime(asDate(res.data.started_at));
+   info(which==='breast'?'Amningen er startet. Tryk Stop og registrér, når den er slut.':'Flasketimer startet. I har 60 minutter fra måltidets begyndelse.','timer-notice');
+  }else if(action==='breast-finish'){
+   if(!activeTimers.breast)throw Error('Ingen aktiv amning');
+   const r=await supabaseClient.rpc('alina_finish_nursing',{p_family_id:family.id});
+   if(r.error)throw r.error;
+   info('Amningen er automatisk registreret i familiens historik.','timer-notice');
+  }else if(action==='breast-cancel'){
+   if(!activeTimers.breast)return;
+   if(!confirm('Annullér amningstimeren uden at oprette en registrering?'))return;
+   const r=await supabaseClient.from('alina_timers').delete().eq('family_id',family.id).eq('timer_kind','breast').eq('started_at',activeTimers.breast.started_at);
+   if(r.error)throw r.error;
+   info('Amningstimeren blev annulleret.','timer-notice');
+  }else if(action==='bottle-finish'){
+   if(!activeTimers.bottle)return;
+   const began=asDate(activeTimers.bottle.started_at);
+   const r=await supabaseClient.from('alina_timers').delete().eq('family_id',family.id).eq('timer_kind','bottle').eq('started_at',activeTimers.bottle.started_at);
+   if(r.error)throw r.error;
+   if(!editing)$('time').value=localTime(began);
+   info('Flasketimer afsluttet. Husk at gemme den drukne mængde i formularen.','timer-notice');
+  }
+ }catch(e){warn('Timeren kunne ikke ændres: '+errText(e)+'. Prøv at opdatere siden.','timer-notice')}
+ finally{
+  timerPending=false;
+  try{await refreshTimers()}catch(e){warn('Kunne ikke hente timerstatus: '+errText(e),'timer-notice')}
+  if(family)await refreshData();tickTimers();
+ }
 }
 function showApp(){
  $('cloud-gate').classList.add('hidden');$('app-main').classList.remove('hidden');$('main-nav').classList.remove('hidden');$('cloud-account').classList.remove('hidden');
@@ -293,7 +406,7 @@ function render(){
  $('last-feed').textContent=latest?'Seneste måltid: '+humanDate(asDate(latest.at))+' kl. '+humanClock(asDate(latest.at))+' · '+labels(latest).title:'Seneste måltid: ikke registreret.';
  const recent=sorted().slice(0,5);
  $('recent-list').innerHTML=recent.length?recent.map(e=>itemHTML(e,false)).join(''):'<div class="empty">Ingen registreringer endnu.</div>';
- renderHistory();
+ renderHistory();tickTimers();
 }
 function renderHistory(){
  const day=$('history-date').value||localDay(new Date());
@@ -323,7 +436,7 @@ async function refreshData(){
     const r=await supabaseClient.from('alina_entries').select('*').eq('family_id',family.id).order('at',{ascending:false}).range(first,first+999);
     if(r.error)throw r.error;collected.push(...r.data);if(r.data.length<1000)break;
   }
-  entries=collected.map(dbToLocal);render();
+  entries=collected.map(dbToLocal);await refreshTimers();render();
   $('sync-status').textContent='Senest opdateret '+humanClock(new Date());
  }catch(e){$('sync-status').textContent='Kunne ikke synkronisere';warn('Kunne ikke hente fælles data: '+errText(e),'account-notice')}
  finally{refreshing=false}
@@ -446,6 +559,9 @@ async function importJSON(ev){
  finally{$('import-json').disabled=false;await refreshData()}
 }
 $('history-date').value=localDay(new Date());resetForm();render();showGate('auth');
+setInterval(tickTimers,1000);
+document.querySelectorAll('[data-open-timer]').forEach(el=>el.addEventListener('click',()=>{resetForm();setKind(el.dataset.openTimer);view('registrer')}));
+document.querySelectorAll('[data-timer-action]').forEach(el=>el.addEventListener('click',()=>void runTimer(el.dataset.timerAction)));
 if(!supabaseClient)warn('Supabase-klienten blev ikke indlæst. Tjek, at du har internet, og genindlæs siden.');
 else{
   void refreshAuth();
