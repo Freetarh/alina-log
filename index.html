@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#173b47">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" href="./icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Alinas mælke- og hverdagslog. Registrer flasker, amning, bleer og vægt – og beregn mælkemål. Forudsætter internet ved registrering.">
+<title>Alina · Mælk & log</title>
+<style>
+:root{color-scheme:light;--bg:#f2f6f5;--paper:#fff;--ink:#172f3b;--muted:#677985;--teal:#176e76;--dark:#173d48;--tealLight:#e6f4f1;--edge:#dae5e3;--orange:#9b682e;--warn:#fff5e7;--danger:#a94343;--shadow:0 8px 26px rgba(16,47,54,.055)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;min-height:100vh}
+button,input,select,textarea{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #78b8c1;outline-offset:2px}button:disabled{opacity:.5;cursor:not-allowed}
+.shell{max-width:650px;margin:auto;padding:0 15px 115px}.masthead{padding:25px 3px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.eyebrow{text-transform:uppercase;letter-spacing:.135em;font-size:.69rem;font-weight:800;color:var(--teal)}
+h1{font-size:clamp(1.9rem,7vw,2.55rem);line-height:1.1;letter-spacing:-.045em;margin:5px 0 6px}p{line-height:1.5}h2{font-size:1.1rem;letter-spacing:-.025em;margin:0 0 13px}h3{font-size:.96rem;margin:0 0 10px}
+.subtle{color:var(--muted);font-size:.86rem}.small{font-size:.78rem}.tight{margin:0}.chip{white-space:nowrap;font-size:.7rem;font-weight:800;border:1px solid #badbd7;border-radius:99px;color:var(--teal);background:var(--tealLight);padding:7px 9px;margin-top:6px}
+.view{display:none}.view.active{display:block}.panel{background:var(--paper);padding:19px;border:1px solid var(--edge);border-radius:19px;box-shadow:var(--shadow);margin-bottom:14px}
+.hero{background:linear-gradient(150deg,#193f4b,#17616a);color:white;border:0;box-shadow:0 10px 22px #143f4b24}.hero .subtle{color:#d0e6e5}
+.sectionhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px}.sectionhead h2{margin:0}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}.stat{background:#ffffff16;border:1px solid #ffffff21;border-radius:15px;padding:13px 12px}.stat .label{display:block;color:#d7eceb;font-size:.75rem}.stat .value{font-weight:850;letter-spacing:-.04em;font-size:clamp(1.5rem,6vw,2.1rem);line-height:1.35}.stat .unit{font-size:.75rem;font-weight:500;letter-spacing:0}
+.progress{width:100%;height:9px;background:#ffffff30;border-radius:99px;overflow:hidden;margin:16px 0 9px}.progress span{display:block;width:0;height:100%;background:#b5eee1;border-radius:99px;transition:width .2s}
+.hero-note{font-size:.8rem;line-height:1.5;margin:7px 0 0;color:#d4e8e8}
+.quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.quick button{border:1px solid var(--edge);background:white;color:var(--ink);border-radius:16px;min-height:83px;font-weight:750;font-size:.8rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}.quick .symbol{background:var(--tealLight);color:var(--teal);width:32px;height:32px;display:grid;place-items:center;border-radius:10px;font-size:1rem;font-weight:900}
+.btn{padding:11px 15px;background:white;border:1px solid #cbdedb;border-radius:12px;font-weight:700;color:var(--teal);min-height:43px}.btn.primary{background:var(--teal);border-color:var(--teal);color:white}.btn.soft{background:var(--tealLight);border-color:transparent}.btn.danger{color:var(--danger);border-color:#eacccd}.btn.plain{border:none;background:transparent;padding:7px 5px;min-height:auto}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row.split{justify-content:space-between}.muted{color:var(--muted)}.fineprint{font-size:.79rem;line-height:1.55;color:var(--muted)}
+.item-list{display:grid;gap:9px}.item{display:flex;gap:10px;align-items:center;background:#f8fbfa;border:1px solid var(--edge);border-radius:13px;padding:12px}.item-icon{width:35px;height:35px;display:grid;place-items:center;border-radius:11px;background:#e4f1ef;color:var(--teal);font-weight:800;flex-shrink:0}
+.item-main{min-width:0;flex:1}.item-title{font-size:.9rem;font-weight:780}.item-sub{font-size:.76rem;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}.item-time{font-size:.78rem;color:var(--muted);white-space:nowrap}.item-actions{display:flex;gap:6px}.tiny-btn{font-size:.76rem;padding:6px 8px;border:1px solid #d5e1df;background:white;border-radius:9px;color:var(--teal)}
+.empty{text-align:center;border:1px dashed #cadbd8;border-radius:15px;padding:24px 15px;color:var(--muted);font-size:.87rem;background:#fbfdfc}
+.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:18px}.tab{font-weight:750;font-size:.79rem;border:1px solid var(--edge);border-radius:10px;background:white;padding:12px 4px;color:var(--muted)}.tab[aria-selected=true]{background:var(--teal);color:white;border-color:var(--teal)}
+.field{margin-bottom:15px}.field label,.field .label{font-weight:730;font-size:.9rem;display:block;margin-bottom:7px}.field input,.field textarea,.field select{width:100%;border:1px solid #bfcfcd;background:white;border-radius:12px;color:var(--ink);padding:12px 12px;min-height:46px}.field textarea{resize:vertical;min-height:74px}.field .help{font-size:.76rem;color:var(--muted);margin:5px 0 0}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.form-grid .field.full{grid-column:span 2}.hidden{display:none!important}
+.hintbox{background:#f0f7f5;border-radius:12px;padding:12px 14px;font-size:.81rem;line-height:1.5;color:#2c5a59;margin-bottom:15px}
+.notice{min-height:1.2em;font-size:.84rem;color:var(--teal);font-weight:650;line-height:1.5}.notice.error{color:var(--danger)}
+.calc-result{display:grid;grid-template-columns:1fr 1fr;gap:10px}.calc-result>div{background:#f0f7f5;border-radius:13px;padding:16px 12px}.calc-result .amount{font-size:1.85rem;font-weight:850;letter-spacing:-.05em}.calc-result .caption{font-size:.74rem;color:var(--muted);display:block}
+.stepper{display:flex;align-items:center;gap:8px}.stepper input{width:100%;min-width:0}.stepper button{border:1px solid #c2e0db;border-radius:11px;background:var(--tealLight);color:var(--teal);font-weight:850;min-width:45px;min-height:44px}
+.segmented{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.segment{padding:12px 3px;border:1px solid var(--edge);border-radius:10px;background:#f9fcfb;color:var(--ink);font-weight:800}.segment[aria-pressed=true]{background:var(--teal);color:white}
+.warn{background:var(--warn);border:1px solid #efddc4;color:#795225;padding:13px 15px;border-radius:14px;line-height:1.52;font-size:.8rem}
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:5;background:#fffefef5;backdrop-filter:blur(16px);border-top:1px solid #d5e5e1;padding:8px max(11px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(11px,env(safe-area-inset-left))}
+.nav-inner{max-width:650px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.nav button{border:0;border-radius:12px;display:grid;place-items:center;gap:2px;background:transparent;color:var(--muted);font-size:.71rem;padding:7px 3px;font-weight:700}.nav button.active{background:var(--tealLight);color:#13565f}.nav svg{width:21px;height:21px;stroke-width:1.9}
+.daypick{display:flex;gap:7px;align-items:center}.daypick input{min-width:0;flex:1;border:1px solid var(--edge);border-radius:10px;background:white;padding:10px;color:var(--ink);max-width:190px}.daypick .btn{padding:8px 11px;min-height:40px}
+.hr{height:1px;background:var(--edge);margin:15px 0}.exportBtns{display:grid;grid-template-columns:1fr 1fr;gap:9px}.importLabel{display:inline-flex;align-items:center;justify-content:center}
+footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;line-height:1.5}
+@media(max-width:380px){.shell{padding-left:11px;padding-right:11px}.panel{padding:15px}.item{padding:10px}.item-actions{flex-direction:column}.form-grid{gap:0 8px}.quick{gap:6px}.quick button{font-size:.72rem}}
+@media print{.nav,.quick,.tabs,.btn,.item-actions{display:none!important}.view{display:block!important}.shell{padding:0}.panel{box-shadow:none;page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="masthead">
+  <div><div class="eyebrow">Alinas hverdag</div><h1>Mælk & log</h1><p class="subtle tight">Mælkeberegner, flasker, amning og bleer samlet ét sted.</p></div>
+  <div class="chip">Fælles log</div>
+</header>
+<section id="cloud-gate" class="panel">
+  <div id="auth-pane">
+    <h2>Log ind for at dele Alinas log</h2>
+    <p class="subtle small">Hver forælder får sit eget login. Registreringerne deles kun med brugere tilknyttet jeres familie.</p>
+    <form id="auth-form" autocomplete="on">
+      <div class="field"><label for="auth-email">E-mail</label><input type="email" id="auth-email" autocomplete="email" required placeholder="din@email.dk"></div>
+      <div class="field"><label for="auth-password">Adgangskode</label><input type="password" id="auth-password" autocomplete="current-password" required minlength="6" placeholder="Mindst 6 tegn"></div>
+      <div class="row"><button id="login-btn" class="btn primary" type="submit">Log ind</button><button id="signup-btn" class="btn" type="button">Opret nyt login</button></div>
+    </form>
+    <p class="fineprint">Ved ny bruger skal e-mailadressen bekræftes via den mail, Supabase sender. Åbn derefter appen igen.</p>
+  </div>
+  <div id="family-pane" class="hidden">
+    <h2>Vælg familiens log</h2>
+    <p class="subtle small">Den første af jer opretter familiens log. Den anden bruger familiekoden til at tilslutte sig samme data.</p>
+    <div class="row"><button type="button" id="create-family" class="btn primary">Opret familiens log</button></div>
+    <div class="hr"></div>
+    <form id="join-form"><div class="field"><label for="join-code">Familiekode fra din partner</label><input id="join-code" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required autocomplete="off" autocapitalize="off"></div>
+    <button type="submit" class="btn">Tilslut eksisterende log</button></form>
+  </div>
+  <p id="cloud-notice" class="notice" role="status">Forbinder…</p>
+</section>
+<div id="cloud-account" class="panel hidden" style="padding:13px 17px">
+  <div class="row split"><div><strong style="font-size:.83rem" id="user-email"></strong><div class="subtle small" id="sync-status">Synkroniseret</div></div>
+  <div class="row"><button class="btn soft" id="refresh-btn" type="button">Opdater</button><button class="btn" id="logout-btn" type="button">Log ud</button></div></div>
+  <div class="hr" style="margin:12px 0"></div>
+  <div class="row split"><div><strong class="small">Familiekode til Batoul</strong><div class="subtle small">Del kun koden privat.</div></div>
+  <button class="btn soft" id="copy-family-code" type="button">Kopiér kode</button></div>
+  <p class="notice" id="account-notice" role="status"></p>
+</div>
+
+<main id="app-main" class="hidden">
+<section class="view active" id="view-overblik" aria-label="Overblik">
+  <div class="panel hero">
+    <div class="sectionhead"><h2>Seneste 24 timer</h2><span class="small">Opmålte mængder</span></div>
+    <div class="stats">
+      <div class="stat"><span class="label">Flaske / sonde</span><div class="value"><span id="sum-ml">0</span> <span class="unit">ml</span></div></div>
+      <div class="stat"><span class="label">Beregnet døgnmål</span><div class="value"><span id="sum-goal">–</span> <span class="unit">ml</span></div></div>
+      <div class="stat"><span class="label">Flasker + sonde</span><div class="value" id="sum-count">0</div></div>
+      <div class="stat"><span class="label">Amninger</span><div class="value" id="sum-nursing">0</div></div>
+    </div>
+    <div class="progress" aria-hidden="true"><span id="progress-fill"></span></div>
+    <p class="hero-note" id="progress-desc">Der er endnu ingen registreringer.</p>
+    <p class="hero-note">Amning ved brystet tælles som et måltid, men ikke som et målt antal ml.</p>
+  </div>
+  <div class="panel">
+    <div class="sectionhead"><h2>Hurtig registrering</h2></div>
+    <div class="quick">
+      <button type="button" data-quick="bottle"><span class="symbol">ml</span>Flaske</button>
+      <button type="button" data-quick="breast"><span class="symbol">A</span>Amning</button>
+      <button type="button" data-quick="diaper"><span class="symbol">B</span>Ble</button>
+      <button type="button" data-quick="weight"><span class="symbol">g</span>Vægt</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="sectionhead"><h2>Seneste registreringer</h2><button class="btn plain" data-go="historik">Se alle</button></div>
+    <p class="subtle small" id="last-feed">Seneste måltid: ikke registreret.</p>
+    <div id="recent-list" class="item-list"></div>
+  </div>
+</section>
+
+<section class="view" id="view-registrer" aria-label="Registrer">
+  <div class="panel">
+    <h2 id="form-title">Registrer en flaske</h2>
+    <div class="tabs" role="tablist" aria-label="Hændelsestype">
+      <button type="button" class="tab" data-kind="bottle" aria-selected="true">Flaske</button>
+      <button type="button" class="tab" data-kind="breast" aria-selected="false">Amning</button>
+      <button type="button" class="tab" data-kind="diaper" aria-selected="false">Ble</button>
+      <button type="button" class="tab" data-kind="weight" aria-selected="false">Vægt</button>
+    </div>
+    <form id="entry-form">
+      <div class="field"><label for="time">Dato og tidspunkt</label><input type="datetime-local" id="time" required></div>
+      <div id="fields-bottle">
+        <div class="form-grid">
+          <div class="field"><label for="milk-kind">Mælketype</label><select id="milk-kind"><option value="Modermælk">Modermælk</option><option value="MME">MME</option><option value="Blandet">Blandet</option><option value="Sonde">Sonde</option></select></div>
+          <div class="field"><label for="taken">Drukket / givet (ml)</label><input id="taken" type="number" min="1" max="1000" step="1" inputmode="numeric" placeholder="Fx 70"></div>
+          <div class="field full"><label for="offered">Tilberedt i flaske (ml) – valgfrit</label><input id="offered" type="number" min="1" max="1000" step="1" inputmode="numeric" placeholder="Fx 80"><p class="help">Overskud tælles ikke med i indtaget. Lad stå tomt, hvis I ikke måler det.</p></div>
+        </div>
+      </div>
+      <div id="fields-breast" class="hidden">
+        <div class="form-grid">
+          <div class="field"><label for="breast-side">Bryst</label><select id="breast-side"><option value="Begge">Begge</option><option value="Venstre">Venstre</option><option value="Højre">Højre</option></select></div>
+          <div class="field"><label for="minutes">Varighed (min)</label><input id="minutes" type="number" min="1" max="180" step="1" inputmode="numeric" placeholder="Fx 15"></div>
+        </div>
+        <div class="hintbox">Varighed kan registreres, men fortæller ikke præcist, hvor mange ml Alina har fået.</div>
+      </div>
+      <div id="fields-diaper" class="hidden">
+        <div class="field"><label for="diaper-kind">Bletype</label><select id="diaper-kind"><option value="Våd">Våd (tis)</option><option value="Afføring">Afføring</option><option value="Begge">Begge dele</option></select></div>
+      </div>
+      <div id="fields-weight" class="hidden">
+        <div class="field"><label for="new-weight">Målt vægt (g)</label><input id="new-weight" type="number" min="1000" max="15000" step="10" inputmode="numeric" placeholder="Fx 3500"><p class="help">Opdaterer automatisk vægten i mælkeberegneren.</p></div>
+      </div>
+      <div class="field"><label for="memo">Bemærkning – valgfrit</label><textarea id="memo" maxlength="400" rows="2" placeholder="Fx urolig, bøvsede, afføringens konsistens ..."></textarea></div>
+      <div class="row">
+        <button class="btn primary" type="submit" id="save-entry">Gem registrering</button>
+        <button class="btn hidden" type="button" id="cancel-edit">Annuller redigering</button>
+      </div>
+      <p id="form-notice" class="notice" role="status"></p>
+    </form>
+  </div>
+</section>
+
+<section class="view" id="view-beregner" aria-label="Mælkeberegner">
+  <div class="panel">
+    <h2>Alinas mælkeberegner</h2>
+    <p class="subtle small" style="margin-top:-5px">Indstillingerne er fælles for jer begge. Opdatér vægten til Alinas aktuelle vægt.</p>
+    <div class="field">
+      <label for="weight">Aktuel vægt (g)</label>
+      <div class="stepper"><button type="button" id="weight-minus" aria-label="Træk 50 gram fra">−50</button><input type="number" id="weight" min="1000" max="15000" step="10" inputmode="numeric" value="2610"><button type="button" id="weight-plus" aria-label="Læg 50 gram til">+50</button></div>
+      <p class="help">Ret til hendes aktuelle vægt. Standardværdien er fra en tidligere beregning – ret den til den aktuelle vægt.</p>
+    </div>
+    <div class="field"><span class="label">Måltider pr. døgn</span><div class="segmented" id="feeds-options"><button class="segment" data-feeds="6" type="button">6</button><button class="segment" data-feeds="7" type="button">7</button><button class="segment" data-feeds="8" type="button">8</button><button class="segment" data-feeds="10" type="button">10</button></div></div>
+    <div class="field"><label for="factor">Døgnmål (ml/kg/døgn)</label><input id="factor" type="number" min="100" max="250" step="5" inputmode="decimal" value="180"><p class="help">180 er værdien fra neonatalafdelingens tidligere plan. Brug kun denne, hvis den fortsat gælder.</p></div>
+    <div class="calc-result" aria-live="polite">
+      <div><span class="caption">Beregnet pr. døgn</span><span class="amount" id="calc-daily">–</span><span class="caption">ml</span></div>
+      <div><span class="caption">Beregnet pr. måltid</span><span class="amount" id="calc-feed">–</span><span class="caption">ml</span></div>
+    </div>
+    <p class="fineprint" id="calc-explain"></p>
+    <button type="button" class="btn soft" id="copy-calc">Kopiér beregning</button>
+  </div>
+  <div class="warn"><strong>Vigtigt:</strong> Beregningen er ikke en ordination. Følg den aktuelle plan fra sundhedspersonalet. En fuld amning kan ikke omregnes til ml ud fra varigheden, så oversigten over opmålte ml viser ikke nødvendigvis hele døgnindtaget.</div>
+</section>
+
+<section class="view" id="view-historik" aria-label="Historik">
+  <div class="panel">
+    <div class="sectionhead"><h2>Historik</h2><span class="subtle small">Kalenderdøgn</span></div>
+    <div class="daypick"><button type="button" class="btn" id="prev-day" aria-label="Forrige dag">‹</button><input id="history-date" type="date" aria-label="Vælg dag"><button type="button" class="btn" id="next-day" aria-label="Næste dag">›</button><button type="button" class="btn soft" id="today-btn">I dag</button></div>
+    <div class="hr"></div>
+    <p id="history-summary" class="subtle small"></p>
+    <div id="history-list" class="item-list"></div>
+  </div>
+  <div class="panel">
+    <h2>Sikkerhedskopi</h2>
+    <p class="fineprint">Data gemmes i jeres private Supabase-database og deles mellem jer, når der er internet. Eksportér gerne en ekstra sikkerhedskopi som JSON.</p>
+    <div class="exportBtns">
+      <button class="btn" type="button" id="export-json">Eksportér backup</button>
+      <button class="btn" type="button" id="export-csv">Eksportér CSV</button>
+    </div>
+    <div class="hr"></div>
+    <label class="btn importLabel" for="import-json" style="cursor:pointer">Indlæs backup (JSON)</label>
+    <input id="import-json" type="file" accept=".json,application/json" class="hidden">
+    <p id="backup-notice" class="notice" role="status"></p>
+    <p class="fineprint">Indlæsning tilføjer registreringer fra sikkerhedskopien til familiens fælles log. Dubletter med samme indhold springes over.</p>
+  </div>
+</section>
+</main>
+<footer>Alinas Mælk & log · Privat familielog · Synkroniseres via Supabase</footer>
+</div>
+
+<nav id="main-nav" class="nav hidden" aria-label="Hovedmenu"><div class="nav-inner">
+  <button type="button" class="active" data-go="overblik" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M9 20v-6h6v6" stroke-linecap="round" stroke-linejoin="round"/></svg>Overblik</button>
+  <button type="button" data-go="registrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 4v16M4 12h16" stroke-linecap="round" stroke-width="2.3"/></svg>Registrer</button>
+  <button type="button" data-go="beregner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2m4 0h2m-8 4h2m4 0h2M8 18h8" stroke-linecap="round"/></svg>Beregner</button>
+  <button type="button" data-go="historik"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18M7 14h3m4 0h3m-10 4h3" stroke-linecap="round"/></svg>Historik</button>
+</div></nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0"></script>
+<script>
+(function () {
+'use strict';
+const $=id=>document.getElementById(id);
+const API_URL='https://lsqasyswqwbggkzmsyvz.supabase.co';
+const API_KEY='sb_publishable_VTT36vkPI9Od1-jbAKB6dQ_-VFlsImR';
+const OLD_KEY='alina-carelog-v1';
+const supabaseClient=window.supabase?.createClient(API_URL,API_KEY,{
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+});
+let user=null, family=null, entries=[],settings={weight:2610,factor:180,feeds:8},kind='bottle',editing=null,pending=false,refreshing=false;
+const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>Number(n).toLocaleString('da-DK',{maximumFractionDigits:1});
+const localDay=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const localTime=d=>localDay(d)+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+const asDate=s=>new Date(s);
+const startOfDay=s=>new Date(s+'T00:00:00');
+const humanDate=d=>d.toLocaleDateString('da-DK',{day:'numeric',month:'short',year:'numeric'});
+const humanClock=d=>d.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+const sorted=()=>[...entries].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
+const calc=()=>{const daily=settings.weight/1000*settings.factor;return {daily,each:daily/settings.feeds}};
+const warn=(message,id='cloud-notice')=>{const el=$(id);el.textContent=message;el.classList.add('error')};
+const info=(message,id='cloud-notice')=>{const el=$(id);el.textContent=message;el.classList.remove('error')};
+const errText=e=>e?.message||String(e||'Ukendt fejl');
+const isFeed=e=>e.kind==='bottle'||e.kind==='breast';
+const uuid=()=>crypto.randomUUID();
+const uuidValid=s=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(String(s||''));
+const localEntryToDb=e=>({
+  id:uuidValid(e.id)?e.id:uuid(),family_id:family.id,kind:e.kind,at:e.at,note:String(e.note||'').slice(0,400),
+  milk_type:e.kind==='bottle'?e.milk:null,volume_ml:e.kind==='bottle'?Number(e.taken):null,
+  offered_ml:e.kind==='bottle'&&e.offered!==null&&e.offered!==''&&e.offered!==undefined?Number(e.offered):null,
+  breast_side:e.kind==='breast'?e.side:null,duration_min:e.kind==='breast'?Number(e.minutes):null,
+  diaper_type:e.kind==='diaper'?e.diaper:null,weight_g:e.kind==='weight'?Number(e.grams):null
+});
+const dbToLocal=e=>({
+ id:e.id,kind:e.kind,at:e.at,note:e.note||'',milk:e.milk_type,taken:e.volume_ml,offered:e.offered_ml,
+ side:e.breast_side,minutes:e.duration_min,diaper:e.diaper_type,grams:e.weight_g
+});
+function validEntry(e){
+ if(!e||!['bottle','breast','diaper','weight'].includes(e.kind)||!Number.isFinite(Date.parse(e.at)))return false;
+ if(e.kind==='bottle')return ['Modermælk','MME','Blandet','Sonde'].includes(e.milk)&&Number(e.taken)>=1&&Number(e.taken)<=1000&&(!e.offered||Number(e.offered)>=Number(e.taken));
+ if(e.kind==='breast')return ['Venstre','Højre','Begge'].includes(e.side)&&Number(e.minutes)>=1&&Number(e.minutes)<=180;
+ if(e.kind==='diaper')return ['Våd','Afføring','Begge'].includes(e.diaper);
+ return Number(e.grams)>=1000&&Number(e.grams)<=15000;
+}
+function view(view){
+ document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id==='view-'+view));
+ document.querySelectorAll('#main-nav button').forEach(el=>{const selected=el.dataset.go===view;el.classList.toggle('active',selected);selected?el.setAttribute('aria-current','page'):el.removeAttribute('aria-current')});
+ window.scrollTo({top:0,behavior:'instant'});
+}
+function showGate(mode){
+ $('cloud-gate').classList.remove('hidden');$('app-main').classList.add('hidden');$('main-nav').classList.add('hidden');$('cloud-account').classList.add('hidden');
+ $('auth-pane').classList.toggle('hidden',mode!=='auth');$('family-pane').classList.toggle('hidden',mode!=='family');
+}
+function showApp(){
+ $('cloud-gate').classList.add('hidden');$('app-main').classList.remove('hidden');$('main-nav').classList.remove('hidden');$('cloud-account').classList.remove('hidden');
+ $('user-email').textContent=user?.email||'Logget ind';
+}
+function labels(e){
+ if(e.kind==='bottle')return {ico:e.milk==='Sonde'?'S':'ml',title:(e.milk==='Sonde'?'Sonde':'Flaske')+' · '+fmt(e.taken)+' ml',desc:(e.milk||'Mælk')+(e.offered?' · '+fmt(e.offered-e.taken)+' ml tilovers':'')};
+ if(e.kind==='breast')return {ico:'A',title:'Amning · '+fmt(e.minutes)+' min',desc:e.side||'Begge'};
+ if(e.kind==='diaper')return {ico:'B',title:'Ble · '+e.diaper,desc:'Bleskift'};
+ return {ico:'g',title:'Vægt · '+fmt(e.grams)+' g',desc:'Vejning'};
+}
+function itemHTML(e,controls){
+ const l=labels(e),d=asDate(e.at);
+ return '<div class="item"><span class="item-icon">'+h(l.ico)+'</span><div class="item-main"><div class="item-title">'+h(l.title)+'</div><div class="item-sub">'+h(l.desc)+(e.note?' · '+h(e.note):'')+'</div></div><div><div class="item-time">'+humanClock(d)+'</div>'+(controls?'<div class="item-actions"><button type="button" class="tiny-btn" data-edit="'+h(e.id)+'">Ret</button><button type="button" class="tiny-btn" data-delete="'+h(e.id)+'">Slet</button></div>':'')+'</div></div>';
+}
+function render(){
+ $('weight').value=settings.weight;$('factor').value=settings.factor;
+ document.querySelectorAll('[data-feeds]').forEach(x=>x.setAttribute('aria-pressed',String(Number(x.dataset.feeds)===settings.feeds)));
+ const c=calc();$('calc-daily').textContent=fmt(Math.round(c.daily));$('calc-feed').textContent=fmt(Math.round(c.each));
+ $('calc-explain').textContent=fmt(settings.weight)+' g × '+fmt(settings.factor)+' ml/kg/døgn = '+fmt(c.daily)+' ml pr. døgn. Fordelt på '+settings.feeds+' måltider: ca. '+fmt(c.each)+' ml pr. måltid.';
+ const now=Date.now(),last=now-24*3600*1000;
+ const subset=entries.filter(e=>{const ms=Date.parse(e.at);return ms>=last&&ms<=now});
+ const bottles=subset.filter(e=>e.kind==='bottle'),nursing=subset.filter(e=>e.kind==='breast');
+ const ml=bottles.reduce((s,e)=>s+Number(e.taken),0);
+ $('sum-ml').textContent=fmt(ml);$('sum-goal').textContent=fmt(Math.round(c.daily));$('sum-count').textContent=bottles.length;$('sum-nursing').textContent=nursing.length;
+ $('progress-fill').style.width=Math.max(0,Math.min(100,100*ml/c.daily))+'%';
+ $('progress-desc').textContent=fmt(ml)+' ml registreret fra flaske/sonde ('+fmt(Math.round(ml/c.daily*100))+' % af beregnet døgnmål). Kun opmålte mængder indgår.';
+ const latest=sorted().find(isFeed);
+ $('last-feed').textContent=latest?'Seneste måltid: '+humanDate(asDate(latest.at))+' kl. '+humanClock(asDate(latest.at))+' · '+labels(latest).title:'Seneste måltid: ikke registreret.';
+ const recent=sorted().slice(0,5);
+ $('recent-list').innerHTML=recent.length?recent.map(e=>itemHTML(e,false)).join(''):'<div class="empty">Ingen registreringer endnu.</div>';
+ renderHistory();
+}
+function renderHistory(){
+ const day=$('history-date').value||localDay(new Date());
+ const items=sorted().filter(e=>localDay(asDate(e.at))===day);
+ const ml=items.filter(e=>e.kind==='bottle').reduce((s,e)=>s+Number(e.taken),0);
+ const nursing=items.filter(e=>e.kind==='breast').length;
+ const wet=items.filter(e=>e.kind==='diaper'&&['Våd','Begge'].includes(e.diaper)).length;
+ const poop=items.filter(e=>e.kind==='diaper'&&['Afføring','Begge'].includes(e.diaper)).length;
+ $('history-summary').textContent=humanDate(startOfDay(day))+': '+fmt(ml)+' ml opmålt · '+nursing+' amninger · '+wet+' våde bleer · '+poop+' afføringsbleer';
+ $('history-list').innerHTML=items.length?items.map(e=>itemHTML(e,true)).join(''):'<div class="empty">Ingen registreringer denne dag.</div>';
+}
+function setKind(x){
+ kind=x;$('form-title').textContent=editing?'Ret registrering':({bottle:'Registrer en flaske',breast:'Registrer amning',diaper:'Registrer en ble',weight:'Registrer vægt'}[x]);
+ document.querySelectorAll('[data-kind]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.kind===x)));
+ ['bottle','breast','diaper','weight'].forEach(t=>$('fields-'+t).classList.toggle('hidden',t!==x));
+}
+function resetForm(){editing=null;$('entry-form').reset();$('time').value=localTime(new Date());$('save-entry').textContent='Gem registrering';$('cancel-edit').classList.add('hidden');info('','form-notice');setKind(kind)}
+function lock(button,on){button.disabled=on;pending=on}
+async function refreshData(){
+ if(!family||refreshing||pending)return;
+ refreshing=true;$('sync-status').textContent='Opdaterer…';
+ try{
+  const s=await supabaseClient.from('alina_settings').select('weight_g,factor,feeds').eq('family_id',family.id).single();if(s.error)throw s.error;
+  settings={weight:s.data.weight_g,factor:s.data.factor,feeds:s.data.feeds};
+  let collected=[];
+  for(let first=0;first<10000;first+=1000){
+    const r=await supabaseClient.from('alina_entries').select('*').eq('family_id',family.id).order('at',{ascending:false}).range(first,first+999);
+    if(r.error)throw r.error;collected.push(...r.data);if(r.data.length<1000)break;
+  }
+  entries=collected.map(dbToLocal);render();
+  $('sync-status').textContent='Senest opdateret '+humanClock(new Date());
+ }catch(e){$('sync-status').textContent='Kunne ikke synkronisere';warn('Kunne ikke hente fælles data: '+errText(e),'account-notice')}
+ finally{refreshing=false}
+}
+async function refreshAuth(){
+ if(!supabaseClient){showGate('auth');warn('Kunne ikke indlæse Supabase-klienten. Tjek internetforbindelsen.');return}
+ try{
+  const s=await supabaseClient.auth.getUser();if(s.error||!s.data.user){user=null;family=null;showGate('auth');info('');return}
+  user=s.data.user;$('user-email').textContent=user.email||'';
+  const m=await supabaseClient.from('alina_members').select('family_id').eq('user_id',user.id).maybeSingle();
+  if(m.error)throw m.error;
+  if(!m.data){family=null;showGate('family');info('Logget ind som '+(user.email||'bruger')+'. Opret eller tilslut familiens log.');return}
+  const f=await supabaseClient.from('alina_families').select('id,invite_code').eq('id',m.data.family_id).single();if(f.error)throw f.error;
+  family=f.data;showApp();info('','account-notice');await refreshData();
+ }catch(e){showGate('auth');warn('Kunne ikke oprette forbindelse: '+errText(e))}
+}
+async function authSubmit(event,signup){
+ event?.preventDefault?.();if(!supabaseClient)return;
+ const email=$('auth-email').value.trim(),password=$('auth-password').value;
+ if(!email||password.length<6){warn('Angiv e-mail og adgangskode på mindst 6 tegn.');return}
+ $('login-btn').disabled=true;$('signup-btn').disabled=true;info('Kontakter loginserveren…');
+ try{
+  const r=signup?await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin+window.location.pathname}}):await supabaseClient.auth.signInWithPassword({email,password});
+  if(r.error)throw r.error;
+  if(signup&&!r.data?.session){info('Tjek din e-mail, og bekræft kontoen. Åbn derefter appen og log ind.');return}
+  await refreshAuth();
+ }catch(e){warn('Login kunne ikke gennemføres: '+errText(e))}
+ finally{$('login-btn').disabled=false;$('signup-btn').disabled=false}
+}
+async function familyAction(action,code){
+ const btn=$(action==='create'?'create-family':'join-submit');
+ if(btn)btn.disabled=true;
+ info('Klargør familiens log…');
+ try{
+  const r=action==='create'?await supabaseClient.rpc('alina_family_create'):await supabaseClient.rpc('alina_family_join',{code});
+  if(r.error)throw r.error;
+  await refreshAuth();
+ }catch(e){warn('Kunne ikke tilknytte familie: '+errText(e))}
+ finally{if(btn)btn.disabled=false}
+}
+async function saveRecord(ev){
+ ev.preventDefault();if(!family||pending)return;
+ const date=new Date($('time').value);
+ if(!Number.isFinite(date.getTime()))return warn('Vælg en gyldig dato og tid.','form-notice');
+ if(date.getTime()>Date.now()+300000)return warn('Datoen må ikke ligge fremme i tiden.','form-notice');
+ const e={id:editing||uuid(),kind,at:date.toISOString(),note:$('memo').value.trim().slice(0,400)};
+ if(kind==='bottle'){
+  const v=$('taken').value.trim(),o=$('offered').value.trim(),taken=Number(v),offered=o===''?null:Number(o);
+  if(!v||!Number.isInteger(taken)||taken<1||taken>1000)return warn('Indtast drukket mængde i ml (1–1000).','form-notice');
+  if(offered!==null&&(!Number.isInteger(offered)||offered<taken||offered>1000))return warn('Tilberedt mængde skal være mindst den drukne mængde.','form-notice');
+  Object.assign(e,{milk:$('milk-kind').value,taken,offered});
+ }else if(kind==='breast'){
+  const v=$('minutes').value.trim(),minutes=Number(v);if(!v||!Number.isInteger(minutes)||minutes<1||minutes>180)return warn('Angiv varighed i minutter (1–180).','form-notice');
+  Object.assign(e,{side:$('breast-side').value,minutes});
+ }else if(kind==='diaper'){e.diaper=$('diaper-kind').value}
+ else{
+  const v=$('new-weight').value.trim(),grams=Number(v);if(!v||grams<1000||grams>15000||!Number.isFinite(grams))return warn('Indtast en gyldig vægt i gram.','form-notice');
+  e.grams=grams;
+ }
+ const wasEditing=Boolean(editing);
+ lock($('save-entry'),true);info('Gemmer i familiens log…','form-notice');
+ try{
+  const db=localEntryToDb(e);
+  const r=wasEditing?await supabaseClient.from('alina_entries').update(db).eq('id',editing).eq('family_id',family.id).select('id'):await supabaseClient.from('alina_entries').insert(db).select('id');
+  if(r.error)throw r.error;if(!r.data?.length)throw Error('Registreringen blev ikke gemt.');
+  if(kind==='weight'){
+    const s=await supabaseClient.from('alina_settings').update({weight_g:e.grams,updated_at:new Date().toISOString()}).eq('family_id',family.id);
+    if(s.error)warn('Vægten er gemt, men mælkeberegneren kunne ikke opdateres: '+errText(s.error),'form-notice');
+  }
+  resetForm();info(wasEditing?'Registreringen er opdateret.':'Registreringen er gemt og deles med den anden telefon.','form-notice');
+ }catch(ex){warn('Kunne ikke gemme. Tjek forbindelsen, og prøv igen: '+errText(ex),'form-notice')}
+ finally{lock($('save-entry'),false);await refreshData()}
+}
+function editEntry(id){
+ const e=entries.find(x=>x.id===id);if(!e)return;
+ editing=id;setKind(e.kind);$('time').value=localTime(asDate(e.at));$('memo').value=e.note||'';
+ if(e.kind==='bottle'){$('milk-kind').value=e.milk||'Modermælk';$('taken').value=e.taken;$('offered').value=e.offered??''}
+ if(e.kind==='breast'){$('breast-side').value=e.side||'Begge';$('minutes').value=e.minutes}
+ if(e.kind==='diaper')$('diaper-kind').value=e.diaper;
+ if(e.kind==='weight')$('new-weight').value=e.grams;
+ $('save-entry').textContent='Gem ændringer';$('cancel-edit').classList.remove('hidden');info('Rediger og gem.','form-notice');view('registrer');
+}
+async function updateSettings(partial){
+ if(!family||pending)return;
+ const desired={...settings,...partial};
+ const body={weight_g:desired.weight,factor:desired.factor,feeds:desired.feeds,updated_at:new Date().toISOString()};
+ try{
+  const r=await supabaseClient.from('alina_settings').update(body).eq('family_id',family.id).select('family_id');
+  if(r.error)throw r.error;if(!r.data.length)throw Error('Indstillingerne blev ikke opdateret.');
+  settings=desired;render();$('sync-status').textContent='Indstillinger gemt';
+ }catch(e){warn('Kunne ikke gemme beregnerens indstillinger: '+errText(e),'account-notice');render()}
+}
+function download(name,content,mime){
+ const b=new Blob([content],{type:mime}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1200)
+}
+function exportJSON(){download('alina-backup-'+localDay(new Date())+'.json',JSON.stringify({version:1,exportedAt:new Date().toISOString(),settings,entries:sorted()},null,2),'application/json');info('Backup-filen er klar.','backup-notice')}
+function csvValue(s){s=String(s??'');return /[;"\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
+function exportCSV(){
+ const h=['Dato','Tid','Hændelse','Mælketype','Drukket ml','Tilberedt ml','Bryst','Minutter','Ble','Vægt g','Bemærkning'];
+ const rows=sorted().map(e=>{const d=asDate(e.at);return [localDay(d),humanClock(d),e.kind,e.milk||'',e.taken??'',e.offered??'',e.side||'',e.minutes??'',e.diaper||'',e.grams??'',e.note||''].map(csvValue).join(';')});
+ download('alina-log-'+localDay(new Date())+'.csv','\ufeff'+h.join(';')+'\r\n'+rows.join('\r\n'),'text/csv;charset=utf-8');info('CSV-filen er klar.','backup-notice');
+}
+const fingerprint=e=>JSON.stringify([e.kind,e.at,e.note||'',e.milk||'',e.taken??null,e.offered??null,e.side||'',e.minutes??null,e.diaper||'',e.grams??null]);
+async function importJSON(ev){
+ const file=ev.target.files?.[0];ev.target.value='';if(!file)return;
+ if(file.size>5*1024*1024)return warn('Filen er for stor (maks. 5 MB).','backup-notice');
+ try{
+  const b=JSON.parse(await file.text());if(b?.version!==1||!Array.isArray(b.entries)||b.entries.length>10000||!b.entries.every(validEntry))throw Error('Forkert filformat');
+  await refreshData();const known=new Set(entries.map(fingerprint));
+  const unique=b.entries.filter(e=>{const f=fingerprint(e);if(known.has(f))return false;known.add(f);return true});
+  if(!unique.length){info('Alle registreringer findes allerede i loggen.','backup-notice');return}
+  if(!confirm('Importer '+unique.length+' registreringer til den fælles log? Eksisterende registreringer bevares.'))return;
+  info('Importerer registreringer…','backup-notice');$('import-json').disabled=true;
+  for(let i=0;i<unique.length;i+=100){
+    const batch=unique.slice(i,i+100).map(e=>localEntryToDb({...e,id:uuid()}));
+    const r=await supabaseClient.from('alina_entries').insert(batch);if(r.error)throw r.error;
+  }
+  info(unique.length+' registreringer importeret. Kontrollér vægten under Beregner.','backup-notice');
+ }catch(e){warn('Import kunne ikke gennemføres: '+errText(e)+'. Kontrollér historikken inden du prøver igen.','backup-notice')}
+ finally{$('import-json').disabled=false;await refreshData()}
+}
+$('history-date').value=localDay(new Date());resetForm();render();showGate('auth');
+if(!supabaseClient)warn('Supabase-klienten blev ikke indlæst. Tjek, at du har internet, og genindlæs siden.');
+else{
+  void refreshAuth();
+  supabaseClient.auth.onAuthStateChange((event,session)=>{if(['SIGNED_IN','SIGNED_OUT','USER_DELETED'].includes(event)){setTimeout(()=>{if(event==='SIGNED_OUT'){user=null;family=null;entries=[];showGate('auth');info('Logget ud.')}else void refreshAuth()},0)}});
+  setInterval(()=>{if(!document.hidden&&family&&!pending)void refreshData()},20000);
+}
+$('auth-form').addEventListener('submit',event=>authSubmit(event,false));
+$('signup-btn').addEventListener('click',event=>authSubmit(event,true));
+$('create-family').addEventListener('click',()=>familyAction('create'));
+$('join-form').addEventListener('submit',e=>{e.preventDefault();const code=$('join-code').value.trim();if(!uuidValid(code))return warn('Indtast den fulde familiekode.');void familyAction('join',code)});
+$('copy-family-code').addEventListener('click',async()=>{if(!family)return;try{await navigator.clipboard.writeText(family.invite_code);info('Familiekoden er kopieret. Send den kun privat.','account-notice')}catch(e){info('Familiekode: '+family.invite_code,'account-notice')}});
+$('logout-btn').addEventListener('click',async()=>{try{const r=await supabaseClient.auth.signOut();if(r.error)throw r.error;user=null;family=null;entries=[];showGate('auth')}catch(e){warn('Kunne ikke logge ud: '+errText(e),'account-notice')}});
+$('refresh-btn').addEventListener('click',()=>refreshData());
+document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>view(el.dataset.go)));
+document.querySelectorAll('[data-quick]').forEach(el=>el.addEventListener('click',()=>{resetForm();setKind(el.dataset.quick);view('registrer')}));
+document.querySelectorAll('[data-kind]').forEach(el=>el.addEventListener('click',()=>{if(editing)resetForm();setKind(el.dataset.kind)}));
+$('entry-form').addEventListener('submit',saveRecord);$('cancel-edit').addEventListener('click',resetForm);
+$('weight').addEventListener('change',()=>{const n=Number($('weight').value);if(n>=1000&&n<=15000)void updateSettings({weight:n});else render()});
+$('factor').addEventListener('change',()=>{const n=Number($('factor').value);if(n>=100&&n<=250)void updateSettings({factor:n});else render()});
+$('weight-minus').addEventListener('click',()=>updateSettings({weight:Math.max(1000,settings.weight-50)}));
+$('weight-plus').addEventListener('click',()=>updateSettings({weight:Math.min(15000,settings.weight+50)}));
+document.querySelectorAll('[data-feeds]').forEach(el=>el.addEventListener('click',()=>updateSettings({feeds:Number(el.dataset.feeds)})));
+$('copy-calc').addEventListener('click',async()=>{try{await navigator.clipboard.writeText('Alina: '+$('calc-explain').textContent);$('copy-calc').textContent='Kopieret';setTimeout(()=>$('copy-calc').textContent='Kopiér beregning',1500)}catch(e){alert('Kunne ikke kopiere beregningen.')}});
+$('history-date').addEventListener('change',renderHistory);
+$('today-btn').addEventListener('click',()=>{$('history-date').value=localDay(new Date());renderHistory()});
+for(const [id,delta] of [['prev-day',-1],['next-day',1]]){$(id).addEventListener('click',()=>{const d=startOfDay($('history-date').value||localDay(new Date()));d.setDate(d.getDate()+delta);$('history-date').value=localDay(d);renderHistory()})}
+$('history-list').addEventListener('click',async ev=>{
+ const edit=ev.target.closest('[data-edit]'),del=ev.target.closest('[data-delete]');
+ if(edit)editEntry(edit.dataset.edit);
+ if(del){const e=entries.find(x=>x.id===del.dataset.delete);if(e&&confirm('Slet '+labels(e).title+' permanent fra begge telefoner?')){
+   const r=await supabaseClient.from('alina_entries').delete().eq('id',e.id).eq('family_id',family.id);
+   if(r.error)alert('Kunne ikke slette: '+errText(r.error));await refreshData();
+ }}
+});
+$('export-json').addEventListener('click',exportJSON);$('export-csv').addEventListener('click',exportCSV);$('import-json').addEventListener('change',importJSON);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!editing)$('time').value=localTime(new Date());void refreshData()}});
+if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost')){
+ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(console.warn));
+}
+})();
+</script>
+</body>
+</html>
