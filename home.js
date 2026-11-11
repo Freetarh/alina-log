@@ -43,7 +43,7 @@ function render(){
   return '<div class="home-event-row"><span class="home-event-time">'+esc(tm)+'</span><span class="home-event-title">'+esc(e.title)+'</span></div>';
  }).join("");
  const lastMeal=lastFeed?(lastFeed.kind==="breast"?"Amning":'Flaske'+(Number(lastFeed.taken)>0?" · "+Number(lastFeed.taken)+" ml":""))+
-   " kl. "+clock(lastFeed.at):"Ikke registreret";
+   (localDay(new Date(lastFeed.at))===today?" kl. ":" "+new Date(lastFeed.at).toLocaleDateString("da-DK",{day:"numeric",month:"short"})+" kl. ")+clock(lastFeed.at):"Ikke registreret";
  const statLine='<span>'+bottleMl.toLocaleString("da-DK")+' ml flaske</span><span>'+nursing+" amninger</span>";
  const note=haveData?(last?"Opdateret "+clock(new Date(last)):""):("Henter dagens overblik…");
  root.innerHTML=
@@ -55,7 +55,7 @@ function render(){
   '<button type="button" data-home-kind="breast"><span class="home-quick-ico">A</span>Amning</button>'+
   '<button type="button" data-home-kind="bottle"><span class="home-quick-ico">ml</span>Flaske</button>'+
   '<button type="button" data-home-kind="diaper"><span class="home-quick-ico">B</span>Ble</button>'+
-  '<button type="button" data-home-go="kalender"><span class="home-quick-ico">+</span>Aftale</button>'+
+  '<button type="button" data-home-new-event><span class="home-quick-ico">+</span>Aftale</button>'+
   '</div>'+
   '<section class="panel home-section" aria-label="Aftaler og huskeliste">'+
   '<div class="home-section-head"><h2>Dagens aftaler</h2><button type="button" data-home-go="kalender" class="home-text-action">Kalender <span aria-hidden="true">›</span></button></div>'+
@@ -111,8 +111,9 @@ async function refresh(force=false){
 function init(config){
  api=config;
  $("home-glance").addEventListener("click",e=>{
-  const navigate=e.target.closest("[data-home-go]"),reload=e.target.closest("[data-home-refresh]"),quick=e.target.closest("[data-home-kind]");
+  const navigate=e.target.closest("[data-home-go]"),reload=e.target.closest("[data-home-refresh]"),quick=e.target.closest("[data-home-kind]"),newEvent=e.target.closest("[data-home-new-event]");
   if(navigate){api.go(navigate.dataset.homeGo);return;}
+  if(newEvent){api.openEvent();return;}
   if(reload){void refresh(true);return;}
   if(quick)api.openEntry(quick.dataset.homeKind);
  });
