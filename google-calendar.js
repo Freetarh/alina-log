@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 let api=null, status=null, calendars=[],events=[], hiddenIds=new Set(), selectedCalendar='primary';
-let loading=false,lastSharedSync=0,viewActive=false;
+let loading=false,lastSharedSync=0,viewActive=false,familyPersonalEvents=[];
 const $=id=>document.getElementById(id);
 const escapeText=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const day=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -35,7 +35,8 @@ function connectedUI(){
  $('google-shared-select-wrap').classList.toggle('hidden',!active||Boolean(status?.shared&&!status.shared.owned_by_me));
  $('google-sync-shared').disabled=!status?.shared;
  $('google-sync-shared').classList.toggle('hidden',!status?.shared);
- $('google-google-account-hint').textContent=active?'Personlige Google-aftaler vises kun for dig og kopieres ikke til familiedatabasen.':'';
+ $('google-google-account-hint').textContent=active?'Dine Google-aftaler deles kun, hvis du aktivt slår deling til. Enkeltstående aftaler kan skjules.':'';
+ $('google-share-personal').checked=Boolean(status?.sharing?.enabled);
 }
 async function refreshStatus(){
  if(!state().family)return;
@@ -43,6 +44,7 @@ async function refreshStatus(){
   status=await call('status');connectedUI();
   if(status.connected)await loadCalendars();
   else{events=[];calendars=[];renderPersonal();$('google-calendars').innerHTML='';}
+  await loadFamilyPersonalEvents();
  }catch(e){notice('Kunne ikke hente status: '+errorText(e),true);}
 }
 async function loadCalendars(){
@@ -51,10 +53,11 @@ async function loadCalendars(){
   const data=await call('calendars');
   calendars=data.calendars||[];
   const choices=calendars.filter(c=>c.access_role!=='freeBusyReader'&&(!status.shared||c.id!==status.shared.calendar_id));
-  const cached=localStorage.getItem('family-personal-google-calendar-'+(state().user?.id||''))||'primary';
+  const cached=status.sharing?.enabled?status.sharing.calendar_id:(localStorage.getItem('family-personal-google-calendar-'+(state().user?.id||''))||'primary');
   selectedCalendar=choices.some(c=>c.id===cached)?cached:(choices.find(c=>c.primary)?.id||choices[0]?.id||'primary');
   $('google-calendars').innerHTML=choices.map(c=>'<option value="'+escapeText(c.id)+'"'+(c.id===selectedCalendar?' selected':'')+'>'+escapeText(c.name)+(c.primary?' (primær)':'')+'</option>').join('');
   if(choices.length===0){selectedCalendar='primary';}
+  $('google-share-personal').checked=Boolean(status.sharing?.enabled&&status.sharing.calendar_id===selectedCalendar);
   const sharedChoices=calendars.filter(c=>!c.primary&&c.writable);
   $('google-shared-select').innerHTML='<option value="">Vælg en separat kalender</option>'+sharedChoices.map(c=>'<option value="'+escapeText(c.id)+'">'+escapeText(c.name)+'</option>').join('');
   if(status.shared?.owned_by_me)$('google-shared-select').value=status.shared.calendar_id;
@@ -110,9 +113,47 @@ async function toggleHidden(eventId){
     api.client.from('google_hidden_events').insert({user_id:uid,calendar_id:selectedCalendar,event_id:eventId});
   const {error}=await query;if(error)throw error;
   if(isHidden)hiddenIds.delete(eventId);else hiddenIds.add(eventId);
-  renderPersonal();
+  renderPersonal();await loadFamilyPersonalEvents();
  }catch(e){notice('Kunne ikke ændre synlighed: '+errorText(e),true);}
 }
+
+async function loadFamilyPersonalEvents(){
+ if(!viewActive||!state().family||!status?.configured)return;
+ try{
+  const result=await call('family-events',{day:$('calendar-day').value});
+  familyPersonalEvents=result.events||[];
+  renderFamilyPersonalEvents();
+  if(result.unavailable)notice('En delt Google-kalender kunne ikke hentes. Ejeren kan muligvis skulle forbinde sin konto igen.',true);
+ }catch(e){$('google-family-list').innerHTML='<div class="empty">'+escapeText(errorText(e))+'</div>';}
+}
+function renderFamilyPersonalEvents(){
+ const target=$('google-family-list');if(!target)return;
+ const currentDay=$('calendar-day').value,me=state().user?.id;
+ const items=familyPersonalEvents.filter(e=>e.all_day?e.starts_at.slice(0,10)===currentDay:day(new Date(e.starts_at))===currentDay);
+ $('google-family-count').textContent=items.length+' delte Google-aftaler';
+ if(!items.length){target.innerHTML='<div class="empty">Ingen Google-aftaler er delt med familien på denne dato.</div>';return;}
+ target.innerHTML=items.map(e=>{
+  const when=e.all_day?'Hele dagen':clock(new Date(e.starts_at));
+  const label=e.source_user_id===me?'Delt fra din Google-kalender':'Delt fra din partners Google-kalender';
+  return '<div class="calendar-item"><div class="calendar-body"><div class="calendar-title">'+escapeText(e.summary)+'</div><div class="calendar-meta">'+escapeText(when)+' · '+escapeText(label)+'</div></div></div>';
+ }).join('');
+}
+async function setPersonalShare(enable,calendarId=selectedCalendar){
+ const u=state().user,f=state().family;if(!u||!f)return false;
+ if(enable&&!confirm('Du deler nu alle aftaler fra den valgte Google-kalender med din partner, undtagen skjulte aftaler og aftaler markeret private i Google. Fortsæt?'))return false;
+ try{
+  const {error}=await api.client.from('google_personal_share_settings').upsert({
+   user_id:u.id,family_id:f.id,calendar_id:calendarId,share_enabled:enable,updated_at:new Date().toISOString()
+  },{onConflict:'user_id'});
+  if(error)throw error;
+  status.sharing={enabled:enable,calendar_id:calendarId};
+  $('google-share-personal').checked=enable;
+  notice(enable?'Din valgte Google-kalender deles nu med familien.':'Deling af din personlige Google-kalender er slået fra.');
+  await loadFamilyPersonalEvents();
+  return true;
+ }catch(e){notice('Kunne ikke ændre Google-deling: '+errorText(e),true);return false;}
+}
+
 async function syncShared(force=false){
  if(!status?.shared||!state().family||loading)return;
  if(!force&&Date.now()-lastSharedSync<5*60*1000)return;
@@ -170,6 +211,7 @@ function onCalendarView(){
 }
 function onDateChange(){
  if(viewActive&&status?.connected)void loadPersonalEvents();
+ if(viewActive)void loadFamilyPersonalEvents();
 }
 function init(options){
  api=options;
@@ -186,9 +228,20 @@ function init(options){
  $('google-status-refresh').addEventListener('click',()=>void refreshStatus());
  $('google-show-personal').addEventListener('change',()=>{if($('google-show-personal').checked)void loadPersonalEvents();else renderPersonal();});
  $('google-show-hidden').addEventListener('change',renderPersonal);
- $('google-calendars').addEventListener('change',()=>{
-  selectedCalendar=$('google-calendars').value;
+ $('google-share-personal').addEventListener('change',async()=>{
+   const requested=$('google-share-personal').checked;
+   const ok=await setPersonalShare(requested);
+   if(!ok)$('google-share-personal').checked=Boolean(status?.sharing?.enabled);
+ });
+ $('google-calendars').addEventListener('change',async()=>{
+  const next=$('google-calendars').value;
+  if(status?.sharing?.enabled){
+    const ok=await setPersonalShare(false,status.sharing.calendar_id);
+    if(!ok){$('google-calendars').value=selectedCalendar;return;}
+  }
+  selectedCalendar=next;
   localStorage.setItem('family-personal-google-calendar-'+(state().user?.id||''),selectedCalendar);
+  $('google-share-personal').checked=false;
   void loadPersonalEvents();
  });
  $('google-personal-list').addEventListener('click',e=>{
@@ -200,8 +253,8 @@ function init(options){
  connectedUI();renderPersonal();
 }
 function reset(){
- status=null;calendars=[];events=[];hiddenIds=new Set();selectedCalendar='primary';viewActive=false;loading=false;lastSharedSync=0;
- if(api){notice('');connectedUI();renderPersonal();}
+ status=null;calendars=[];events=[];familyPersonalEvents=[];hiddenIds=new Set();selectedCalendar='primary';viewActive=false;loading=false;lastSharedSync=0;
+ if(api){notice('');connectedUI();renderPersonal();renderFamilyPersonalEvents();}
 }
 window.GoogleCalendarModule={init,onCalendarView,onDateChange,reset,syncLocal,deleteLocal};
 })();
