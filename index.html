@@ -7,7 +7,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" href="./icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="description" content="Alinas mælke- og hverdagslog. Registrer flasker, amning, bleer og vægt – og beregn mælkemål. Forudsætter internet ved registrering.">
+<meta name="description" content="Alinas og familiens dashboard med flaskelog, vækstkurver, kalender, tilskud, rengøring, indkøb og madplan. Kræver internet ved registrering.">
 <title>Familiens dashboard · Alina</title>
 <style>
 :root{color-scheme:light;--bg:#f2f6f5;--paper:#fff;--ink:#172f3b;--muted:#677985;--teal:#176e76;--dark:#173d48;--tealLight:#e6f4f1;--edge:#dae5e3;--orange:#9b682e;--warn:#fff5e7;--danger:#a94343;--shadow:0 8px 26px rgba(16,47,54,.055)}
@@ -49,6 +49,7 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 @media print{.nav,.quick,.tabs,.btn,.item-actions{display:none!important}.view{display:block!important}.shell{padding:0}.panel{box-shadow:none;page-break-inside:avoid}}
 </style>
 <link rel="stylesheet" href="./family-dashboard.css">
+<link rel="stylesheet" href="./household.css">
 </head>
 <body>
 <div class="shell">
@@ -295,7 +296,7 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 <section class="view" id="view-kalender" aria-label="Familiekalender">
   <div class="panel">
     <div class="sectionhead"><h2>Familiekalender</h2><button type="button" class="btn soft" id="calendar-refresh">Opdater</button></div>
-    <p class="fineprint">Kalenderen gemmes hos jer i Supabase. Google Kalender-forbindelsen kommer i en senere udviklingsfase.</p>
+    <p class="fineprint">Fælles og private aftaler gemmes i Supabase. Google Kalender kan tilsluttes separat nedenfor.</p>
     <div class="calendar-date-row">
       <button type="button" class="btn" id="calendar-prev" aria-label="Forrige dag">‹</button>
       <input type="date" id="calendar-day" aria-label="Vælg kalenderdag">
