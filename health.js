@@ -118,7 +118,11 @@ function draw(){
  for(const btn of $("health-module").querySelectorAll("[data-health-filter]")){
   const on=btn.dataset.healthFilter===filter;btn.classList.toggle("is-active",on);btn.setAttribute("aria-pressed",String(on));
  }
- const activeRows=filter==="next"?all.filter(x=>!x.completed_on).slice(0,6):all;
+ const upcoming=all.filter(x=>!x.completed_on);
+ const featured=upcoming.slice(0,6);
+ // Include newly added family-specific visits even without a known date.
+ for(const extra of upcoming.filter(x=>!x.standard&&!featured.includes(x)).slice(0,3))featured.push(extra);
+ const activeRows=filter==="next"?featured:all;
  const target=$("health-list");
  target.innerHTML=activeRows.length?activeRows.map(x=>{
   const st=status(x);
