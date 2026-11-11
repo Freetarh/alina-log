@@ -179,7 +179,7 @@ async function saveChore(e){
 async function completeChore(id){
  const {data,error}=await api.client.rpc("complete_family_chore",{p_chore_id:id,p_date:day(new Date())});
  if(error)note("chore-notice","Kunne ikke markere udført: "+error.message,true);
- else{await loadChores(true);note("chore-notice","Opgaven er udført"+(data?.repeat_days?" og næste dato er planlagt.":". Fotfærdig."));}
+ else{await loadChores(true);note("chore-notice","Opgaven er udført"+(data?.repeat_days?" og næste dato er planlagt.":". Færdig."));}
 }
 async function reopenChore(id){
  const {error}=await api.client.from("family_chores").update({completed:false,updated_at:new Date().toISOString()}).eq("family_id",ctx().family.id).eq("id",id);
