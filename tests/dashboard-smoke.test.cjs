@@ -132,7 +132,7 @@ test('new household views render from one family without throwing',async()=>{
  const db={
   family_supplements:[{id:'s1',code:'vitamin_d',title:'D-dråber',dose_instructions:'',daily_goal:null,schedule_time:null,active:true},
    {id:'s2',code:'iron',title:'Jern',dose_instructions:'',daily_goal:null,schedule_time:null,active:true}],
-  family_health_visits:[],family_supplement_doses:[],family_chores:[{id:'c1',title:'Badeværelse',repeat_days:7,due_on:d,responsible:'Begge',completed:false,details:''}],
+  family_health_visits:[{id:'h1',milestone_key:null,title:'Neonatal opfølgning',visit_kind:'followup',expected_on:null,booked_start:null,booked_end:null,completed_on:null,notes:''}],family_supplement_doses:[],family_chores:[{id:'c1',title:'Badeværelse',repeat_days:7,due_on:d,responsible:'Begge',completed:false,details:''}],
   family_chore_history:[],family_groceries:[{id:'g1',name:'Mælk',amount:'1 liter',category:'Køl og mejeri',checked:false,created_at:new Date().toISOString()}],
   family_recipes:[{id:'r1',title:'Pasta',servings:2,prep_minutes:20,ingredients:'Pasta\nTomat',instructions:'Kog'}],
   family_meal_plan:[{id:'m1',meal_date:d,meal_slot:'dinner',title:'Pasta',recipe_id:'r1',note:''}],
@@ -158,6 +158,7 @@ test('new household views render from one family without throwing',async()=>{
  assert.match(get('meal-week').innerHTML,/Pasta/);
  assert.ok(!get('meal-week').innerHTML.includes('Morgenmad')&&!get('meal-week').innerHTML.includes('Frokost'),'Dinner-only view does not show other meals');
  assert.match(get('health-list').innerHTML,/3-måneders vaccination/);
+ assert.match(get('health-list').innerHTML,/Neonatal opfølgning/);
  assert.match(get('home-glance').innerHTML,/Dagens overblik/);
  assert.match(get('home-glance').innerHTML,/Amning/);
  assert.match(get('home-glance').innerHTML,/Aftensmad/);
