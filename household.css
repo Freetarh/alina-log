@@ -43,3 +43,14 @@
 #supplement-notice,#gro-notice,#meal-notice,#recipe-notice,#chore-notice,#growth-notice{min-height:1.25em}
 #gro-name,#chore-title,#recipe-title,#meal-title{scroll-margin-top:70px}
 @media(max-width:420px){.house-inline{flex-wrap:wrap}.house-inline input{flex-basis:100%}.house-inline button{width:100%}.house-card{padding:12px}.meal-line .item-actions{flex-direction:column}.house-recipe summary{flex-wrap:wrap}}
+
+/* Preliminary at-a-glance home layout */
+.home-today .home-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:15px 0}
+.home-stats button{border:1px solid var(--edge);border-radius:13px;background:#f5faf8;padding:13px 8px;color:var(--ink);text-align:center;min-width:0}
+.home-stats button strong{font-size:1.5rem;display:block;color:var(--teal);line-height:1.2}
+.home-stats button span{font-size:.72rem;color:var(--muted);line-height:1.4;display:block;margin-top:5px}
+.home-row{display:flex;align-items:center;gap:12px;border-top:1px solid var(--edge);padding:12px 0}
+.home-row strong{font-size:.87rem}
+.home-row p{font-size:.78rem;color:var(--muted);margin:4px 0 0;line-height:1.45;overflow-wrap:anywhere}
+.home-row .tiny-btn{flex-shrink:0}
+@media(max-width:380px){.home-stats button{padding:11px 5px}.home-stats button span{font-size:.67rem}}
