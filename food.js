@@ -246,7 +246,11 @@ async function addIngredients(lines){
  const current=await api.client.from("family_groceries").select("name").eq("family_id",family.id).eq("checked",false).limit(1000);
  if(current.error)throw current.error;
  const existing=new Set((current.data||[]).map(x=>x.name.toLocaleLowerCase("da-DK")));
- const newRows=products.filter(name=>!existing.has(name.toLocaleLowerCase("da-DK"))).map(name=>({family_id:family.id,name,category:"Andet",created_by:user.id}));
+ const unseen=products.filter(name=>{
+  const key=name.toLocaleLowerCase("da-DK");
+  if(existing.has(key))return false;existing.add(key);return true;
+ });
+ const newRows=unseen.map(name=>({family_id:family.id,name,category:"Andet",created_by:user.id}));
  if(newRows.length){
   const {error}=await api.client.from("family_groceries").insert(newRows);if(error)throw error;
  }
