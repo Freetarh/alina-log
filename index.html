@@ -311,9 +311,16 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
         <label><input type="checkbox" id="google-show-hidden"> Vis skjulte Google-aftaler</label>
       </div>
       <p class="fineprint" id="google-google-account-hint"></p>
+      <div class="calendar-filter">
+        <label><input type="checkbox" id="google-share-personal"> Del mine valgte Google-kalenderaftaler med familien</label>
+      </div>
+      <p class="fineprint">Deling er frivillig og slået fra som standard. Hvis du aktiverer deling, kan din partner se aftaler fra denne kalender, undtagen dem du skjuler med knappen »Skjul« og dem, som er markeret »Privat« i Google.</p>
       <div class="row split"><strong class="small">Mine aftaler</strong><span class="subtle small" id="google-personal-count"></span></div>
       <div class="calendar-list" id="google-personal-list"></div>
     </div>
+    <div class="hr"></div>
+    <div class="row split"><h3>Google-aftaler delt med familien</h3><span id="google-family-count" class="subtle small"></span></div>
+    <div class="calendar-list" id="google-family-list"></div>
     <div class="hr"></div>
     <h3>Fælles Google-kalender</h3>
     <p class="fineprint">Brug en separat Google-kalender til fælles aftaler – aldrig en af jeres primære kalendere. Når den vælges, bliver dens aftaler tilgængelige for jer begge i familiedashboardet. Skjulte og private aftaler bliver ikke sendt fra dashboardet til Google.</p>
