@@ -8,11 +8,11 @@ Et mobilvenligt, fælles dashboard for Frederik og Batoul med Supabase Auth/RLS.
 |---|---|
 | Alinas log | Flasker, amning/timere, bleer, vejning, mælkeberegner, historik og backup af eksisterende log |
 | Vækst | WHO vægt-for-alder (piger) med percentil og referencekurver; egne grafer for længde og hovedomfang |
-| Familiekalender | Dagvisning, private/fælles aftaler, Google OAuth og separat fælles Google-kalender |
+| Familiekalender | Månedsvisning med markører for aftaler, valgfri dagagenda, private/fælles aftaler, Google OAuth og separat fælles Google-kalender |
 | D-dråber og jern | Daglig registrering, tidsstempel, noter, fortryd og valgfri dosisplan |
 | Rengøring | Gentagne opgaver, ansvar (Begge/Frederik/Batoul), forfald, udført-historik og opgaveforslag |
 | Indkøb | Fælles liste, kategorier, mængder, afkrydsning og oprydning |
-| Madplan og opskrifter | Morgenmad/frokost/aftensmad pr. dag, ugerulning, opskrifter og ingredienser til indkøb |
+| Madplan og opskrifter | Kun aftensmad i ugeoversigten, opskrifter og ingredienser til indkøb. Evt. historiske morgenmads-/frokostposter bevares i databasen |
 | Forside | Kompakt dagsoverblik: hurtig registrering, fælles aftaler, tilskud/rengøring, seneste måltid og aftensmad/indkøb |
 | Indstillinger | Konto, synkronisering, opdatering, familiekode og logout bag separat tandhjul og link under Mere |
 
@@ -67,6 +67,7 @@ Rengøringsopgaver gentages efter 1, 7, 14, 30 eller valgfrit antal **dage**; de
 - Dashboard → Google blev testet på telefonen 11. november 2026.
 - Google → Dashboard og visning på Batouls telefon er **ikke** færdigtestet.
 - Personlige kalendere forbliver private som standard, og nøgleord/individuel skjulning filtreres på serveren for delt visning.
+- Månedsvisningen viser aftaler fra dashboardets familiekalender (inkl. importerede fælles Google-aftaler) og den indloggede brugers lokale private aftaler efter filter. Personlige Google-aftaler fra egne primære Google-kalendere vises for den valgte dato under den foldbare »Google Kalender og personlige aftaler«-sektion; de indgår ikke i månedsmarkørerne.
 - En separat fælles Google-kalender synkroniseres manuelt eller når kalenderen åbnes. Synkroniseringen fortsætter ikke, når begge apps er helt lukkede.
 - Google Cloud OAuth-secrets opbevares kun i Supabase Edge Function Secrets; refresh tokens opbevares server-side krypteret med AES-GCM.
 - I Googles testtilstand kan refresh tokens udløbe efter ca. 7 dage, hvilket kræver genforbindelse.
@@ -91,12 +92,12 @@ Testene kontrollerer scripts/assets, unikke IDs, alle routes, WHO-mediantabeller
 ### Næste manuelle accepttest (begge telefoner)
 
 1. Genindlæs PWA'en, så den nye service worker henter samtlige moduler. Kontrollér forsiden og tandhjulet **Indstillinger**. Familiekode og logout må kun vises på indstillingssiden.
-2. Test forsidens knapper **Amning**, **Flaske**, **Ble** og **Aftale**, og kontrollér at de rigtige formularer åbner. Kontrollér også gammel flaskelog, amningstimer og familiekalender.
+2. Test forsidens knapper **Amning**, **Flaske**, **Ble** og **Aftale**, og kontrollér at de rigtige formularer åbner. Kontrollér også flaskelog og amningstimer. I kalenderen: skift måned, vælg en dag, tjek markører for aftaler, og kontrollér at filtret »Vis mine private« kun viser dine egne private aftaler.
 3. Registrér en vægt/længde/hovedomfang og kontrollér kurverne.
 4. Registrér D-dråber/jern med ordineret dosis, og prøv fortryd.
 5. Opret, fuldfør og gentag en rengøringsopgave.
 6. Tilføj og afkryds en vare på begge telefoner.
-7. Opret en opskrift, planlæg den på en dag, og send ingredienser til indkøb.
+7. Opret en opskrift, planlæg den til aftensmad på en dag, og send ingredienser til indkøb. Bekræft at morgenmad og frokost ikke vises.
 8. Opret en aftale i `Familie` direkte i Google og synkronisér til dashboardet. Kontrollér på Batouls telefon.
 9. Kontrollér privat deling: en aftale filtreret på `piller` må ikke vises hos den anden.
 
