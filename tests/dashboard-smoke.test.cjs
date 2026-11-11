@@ -37,6 +37,46 @@ test('all static HTML IDs are unique and main routes exist',()=>{
   assert.ok(html.includes('id="copy-family-code"'),'Family-code copy preserved');
   assert.ok(html.includes('id="logout-btn"'),'Logout preserved');
 });
+test('calendar uses a selectable month grid while retaining private appointment filtering',async()=>{
+ const {document,get}=createFakeDOM(load('index.html'));
+ const now=new Date(),chosen=new Date(now.getFullYear(),now.getMonth(),Math.min(20,now.getDate()+1),12);
+ const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+ const when=iso(chosen),events=[
+  {id:'family-event',title:'Familieaftale',starts_at:when+'T10:00:00',ends_at:when+'T11:00:00',visibility:'family',show_on_family_calendar:true,kind:'appointment',details:'',created_by:'u1'},
+  {id:'private-event',title:'Privat aftale',starts_at:when+'T12:00:00',ends_at:when+'T13:00:00',visibility:'private',show_on_family_calendar:false,kind:'reminder',details:'',created_by:'u1'}
+ ];
+ const client={from(table){return new MockQuery(table,{family_events:events});}};
+ let changed=0;
+ const win={GrowthModule:{renderWeights(){}},GoogleCalendarModule:{onDateChange(){changed++;}}};
+ vm.runInNewContext(load('family-dashboard.js'),{window:win,document,console});
+ win.FamilyDashboard.init({client,getState:()=>({user:{id:'u1'},family:{id:'f1'},entries:[]}),go(){}});
+ win.FamilyDashboard.onView('kalender');
+ for(let i=0;i<15;i++)await Promise.resolve();
+ assert.match(get('calendar-month-grid').innerHTML,/data-cal-day=/);
+ assert.match(get('calendar-month-grid').innerHTML,/calendar-day-cell/);
+ assert.equal(typeof get('calendar-month-grid').listeners.click,'function');
+ get('calendar-month-grid').listeners.click({target:{closest(selector){return selector==='[data-cal-day]'?{dataset:{calDay:when}}:null;}}});
+ assert.equal(get('calendar-day').value,when);
+ assert.match(get('calendar-list').innerHTML,/Familieaftale/);
+ assert.ok(!get('calendar-list').innerHTML.includes('Privat aftale'),'Private event remains hidden by default');
+ get('calendar-show-private').checked=true;
+ get('calendar-show-private').listeners.change();
+ assert.match(get('calendar-list').innerHTML,/Privat aftale/);
+ const monthBefore=get('calendar-month-label').textContent;
+ get('calendar-next').listeners.click();
+ assert.ok(monthBefore!==get('calendar-month-label').textContent,'Next switches months');
+ assert.ok(changed>=2,'Selected day triggers Google day-change flow');
+ get('calendar-new').listeners.click();
+ assert.equal(get('calendar-editor').open,true);
+});
+test('dinner planner has one slot and keeps other historical meals untouched',()=>{
+ const code=load('food.js');
+ assert.ok(code.includes('id="meal-slot" type="hidden" value="dinner"'),'Only dinner can be selected');
+ assert.ok(code.includes('.eq("meal_slot","dinner")'),'Week query fetches dinners only');
+ assert.ok(!code.includes('["breakfast","lunch","dinner"]'),'No breakfast or lunch rows');
+ assert.ok(!code.includes('from("family_meal_plan").delete().neq'),'No deletion of old meal types');
+});
+
 test('WHO girls reference curves match published LMS medians',()=>{
  const w={};vm.runInNewContext(load('growth.js'),{window:w,document:{getElementById:()=>null}});
  const {ref,cdf,zscore}=w.GrowthModule.reference;
