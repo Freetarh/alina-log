@@ -29,6 +29,7 @@ test('all static HTML IDs are unique and main routes exist',()=>{
  assert.equal(new Set(ids).size,ids.length,'duplicate HTML IDs');
  for(const view of ['hjem','overblik','vaegt','kalender','moduler','tilskud','rengoring','indkob','madplan','indstillinger']){
   assert.ok(ids.includes('view-'+view),'missing '+view);
+ }
    const settingsPos=html.indexOf('id="view-indstillinger"');
   const accountPos=html.indexOf('id="cloud-account"');
   assert.ok(accountPos>settingsPos,'Account details must be inside Settings, not above tabs');
