@@ -10,6 +10,7 @@ const formatDay=d=>d.toLocaleDateString('da-DK',{day:'numeric',month:'short',yea
 const formatTime=d=>d.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
 const context=()=>api?.getState()||{};
 function renderWeights(){
+ if(window.GrowthModule)return window.GrowthModule.renderWeights();
  const chart=byId('weight-plot');if(!chart)return;
  const records=(context().entries||[]).filter(e=>e.kind==='weight'&&Number.isFinite(Number(e.grams))&&Number.isFinite(Date.parse(e.at))).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at));
  const filter=byId('weight-period').value;
