@@ -315,6 +315,12 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
         <label><input type="checkbox" id="google-share-personal"> Del mine valgte Google-kalenderaftaler med familien</label>
       </div>
       <p class="fineprint">Deling er frivillig og slået fra som standard. Hvis du aktiverer deling, kan din partner se aftaler fra denne kalender, undtagen dem du skjuler med knappen »Skjul« og dem, som er markeret »Privat« i Google.</p>
+      <div class="field">
+        <label for="google-hide-keywords">Skjul påmindelser efter nøgleord</label>
+        <input id="google-hide-keywords" type="text" placeholder="Fx piller, medicin" maxlength="800">
+        <p class="help">Adskil med komma. En aftale, hvis titel indeholder et af ordene, skjules også for familien – inklusive tilbagevendende aftaler.</p>
+        <button type="button" id="google-save-filters" class="btn soft" style="margin-top:8px">Gem filter</button>
+      </div>
       <div class="row split"><strong class="small">Mine aftaler</strong><span class="subtle small" id="google-personal-count"></span></div>
       <div class="calendar-list" id="google-personal-list"></div>
     </div>
