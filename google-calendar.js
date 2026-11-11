@@ -121,7 +121,7 @@ async function syncShared(force=false){
  notice('Synkroniserer fælles Google-kalender…');
  try{
   const result=await call('sync-shared');
-  notice('Google synkroniseret: '+result.imported+' nye og '+result.updated+' opdaterede aftaler.');
+  notice('Google synkroniseret: '+result.imported+' nye, '+result.updated+' opdaterede og '+(result.removed||0)+' fjernede aftaler.');
   api?.reloadCalendar?.();
  }catch(e){lastSharedSync=0;notice('Synkronisering fejlede: '+errorText(e),true);}
  finally{$('google-sync-shared').disabled=false;}
