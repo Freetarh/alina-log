@@ -77,7 +77,8 @@ function renderMonth(){
  const today=day(new Date()),start=new Date(month.getFullYear(),month.getMonth(),1,12);
  start.setDate(start.getDate()-(start.getDay()+6)%7);
  const last=new Date(month.getFullYear(),month.getMonth()+1,0,12);
- const weeks=Math.ceil((((last-start)/86400000)+1)/7);
+ const firstWeekday=(new Date(month.getFullYear(),month.getMonth(),1,12).getDay()+6)%7;
+ const weeks=Math.ceil((firstWeekday+last.getDate())/7);
  const cells=[];
  for(let i=0;i<weeks*7;i++){
   const date=new Date(start);date.setDate(start.getDate()+i);
