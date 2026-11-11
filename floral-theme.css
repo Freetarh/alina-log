@@ -224,6 +224,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .home-foot>button {color:#7e5988;}
 
 /* Log and quick-entry accents */
+#view-overblik .hero h2,
+#view-overblik .hero h3 { color:#fff; }
+#view-overblik .hero .sectionhead .small { color:#ecf8f5; }
 #view-overblik .hero {
   background:linear-gradient(142deg,#547d9f,#4b8c91 62%,#6ca998);
   box-shadow:0 12px 28px rgba(72,120,149,.19);
@@ -340,6 +343,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .nav button:nth-child(4).active {background:#eef6eb;color:#48785a;}
 
 /* Small, sensible motion only; no animation of infant logs or timers. */
+.home-intro .home-refresh-btn:hover {background:#fff;}
+#view-hjem .home-section .home-section-head button:focus-visible,
+.nav button:focus-visible {outline:3px solid #815898;outline-offset:2px;}
+/* Touch targets stay usable for hurried one-handed baby logging. */
+.nav button {min-height:49px;}
+.home-quick button,.calendar-day-cell,.module-tile {touch-action:manipulation;}
 @media (prefers-reduced-motion:reduce) {
   .btn,.module-tile,.tiny-btn,.home-quick button {transition:none!important;}
 }
