@@ -119,3 +119,17 @@
  .home-event-time{flex-basis:73px}
  .home-section{padding:15px 13px}
 }
+
+/* One dinner per day – no unnecessary breakfast/lunch rows. */
+#meal-week.house-stack{gap:7px}
+.meal-dinner-day{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 12px;border:1px solid var(--edge);border-radius:13px;background:#fbfdfc;min-height:70px}
+.meal-dinner-content{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.meal-dinner-date{font-size:.76rem;color:var(--teal);font-weight:790;text-transform:capitalize}
+.meal-dinner-name{font-size:.9rem;line-height:1.4;overflow-wrap:anywhere}
+.meal-dinner-actions{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.meal-dinner-actions .tiny-btn{padding:8px;min-height:37px}
+@media(max-width:380px){
+ .meal-dinner-day{padding:10px 9px}
+ .meal-dinner-actions{flex-direction:column;gap:4px}
+ .meal-dinner-actions .tiny-btn{font-size:.72rem;padding:5px 7px;min-height:32px}
+}
