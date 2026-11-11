@@ -65,7 +65,7 @@ function renderCalendar(){
   const start=new Date(e.starts_at),end=new Date(e.ends_at),owner=e.created_by===currentUser;
   const tags=(e.visibility==='private'?'<span class="pill-tag">Privat</span>':(!e.show_on_family_calendar?'<span class="pill-tag">Skjult fra overblik</span>':'<span class="pill-tag">Fælles</span>'));
   const type={appointment:'Aftale',reminder:'Påmindelse',medication:'Medicin / tilskud'}[e.kind]||'Aftale';
-  return '<div class="calendar-item"><div class="calendar-body"><div class="calendar-title">'+esc(e.title)+'</div><div class="calendar-meta">'+esc(formatTime(start))+'–'+esc(formatTime(end))+' · '+type+'</div>'+
+  return '<div class="calendar-item"><div class="calendar-body"><div class="calendar-title">'+esc(e.title)+'</div><div class="calendar-meta">'+(e.google_all_day?'Hele dagen':esc(formatTime(start))+'–'+esc(formatTime(end)))+' · '+type+'</div>'+
    (e.details?'<div class="calendar-meta">'+esc(e.details)+'</div>':'')+tags+'</div>'+
    (owner?'<div class="calendar-actions"><button type="button" class="tiny-btn" data-event-edit="'+esc(e.id)+'">Ret</button><button type="button" class="tiny-btn" data-event-delete="'+esc(e.id)+'">Slet</button></div>':'')+'</div>';
  }).join('');
@@ -74,11 +74,11 @@ async function refreshCalendar(){
  const {family}=context();if(!family||!api||loadingEvents)return;
  loadingEvents=true;
  try {
-  const {data,error}=await api.client.from('family_events').select('id,family_id,created_by,title,details,starts_at,ends_at,kind,visibility,show_on_family_calendar').eq('family_id',family.id).order('starts_at',{ascending:true}).limit(2000);
+  const {data,error}=await api.client.from('family_events').select('id,family_id,created_by,title,details,starts_at,ends_at,kind,visibility,show_on_family_calendar,google_event_id,google_calendar_id,google_dirty,google_all_day').eq('family_id',family.id).order('starts_at',{ascending:true}).limit(2000);
   if(error)throw error;
   if(context().family?.id!==family.id)return;
   calendarEvents=data||[];renderCalendar();
-  byId('calendar-status').textContent='Synkroniseret med familiedatabasen. Google Kalender er ikke tilsluttet endnu.';
+  byId('calendar-status').textContent='Familiekalenderen er synkroniseret med Supabase.';
  }catch(e){byId('calendar-status').textContent='Kunne ikke opdatere kalenderen: '+(e.message||String(e));}
  finally{loadingEvents=false;}
 }
@@ -91,15 +91,20 @@ async function saveCalendar(e){
   family_id:family.id,title,details:byId('event-details').value.trim().slice(0,500),
   starts_at:start.toISOString(),ends_at:end.toISOString(),kind:byId('event-kind').value,
   visibility:byId('event-visibility').value,show_on_family_calendar:byId('event-family-visible').checked,
-  updated_at:new Date().toISOString()
+  updated_at:new Date().toISOString(),
+  google_dirty:byId('event-visibility').value==='family'&&byId('event-family-visible').checked
  };
  try{
   let query;
   if(eventEditing)query=api.client.from('family_events').update(row).eq('id',eventEditing).eq('family_id',family.id).eq('created_by',user.id).select('id');
   else query=api.client.from('family_events').insert({...row,created_by:user.id}).select('id');
   const {data,error}=await query;if(error)throw error;if(!data?.length)throw new Error('Aftalen blev ikke gemt. Kontrollér adgang.');
+  const googleSync=row.visibility==='family'&&row.show_on_family_calendar ?
+    await window.GoogleCalendarModule?.syncLocal(data[0].id):null;
   byId('calendar-day').value=day(start);clearCalendarForm();await refreshCalendar();
-  byId('calendar-form-notice').textContent='Aftalen er gemt.';
+  byId('calendar-form-notice').textContent=googleSync?.error?
+    'Aftalen er gemt i familiedashboardet. Google-synkronisering fejlede: '+googleSync.error:
+    googleSync?.synced?'Aftalen er gemt og synkroniseret til Google.':'Aftalen er gemt i familiedashboardet.';
  }catch(error){byId('calendar-form-notice').textContent='Kunne ikke gemme aftalen: '+(error.message||String(error));}
  finally{button.disabled=false;}
 }
@@ -115,9 +120,13 @@ function handleCalendarList(e){
   byId('event-family-visible').checked=event.show_on_family_calendar;byId('calendar-form-notice').textContent='';
   byId('calendar-form').scrollIntoView({behavior:'smooth',block:'start'});return;
  }
- if(!confirm('Slet aftalen "'+event.title+'"?'))return;
+ if(!confirm('Slet aftalen "'+event.title+'"'+(event.google_event_id?' både i dashboardet og på den fælles Google-kalender':'')+'?'))return;
  (async()=>{
   try{
+   if(event.google_event_id){
+    const result=await window.GoogleCalendarModule?.deleteLocal(id);
+    if(!result?.synced)throw new Error(result?.error||'Kan ikke slette Google-kopien, før forbindelsen til den fælles Google-kalender er aktiv.');
+   }
    const {error}=await api.client.from('family_events').delete().eq('id',id).eq('family_id',context().family.id).eq('created_by',context().user.id);
    if(error)throw error;
    await refreshCalendar();
@@ -129,11 +138,11 @@ function init(config){
  byId('calendar-day').value=day(new Date());
  clearCalendarForm();
  byId('weight-period').addEventListener('change',renderWeights);
- byId('calendar-day').addEventListener('change',()=>{clearCalendarForm();renderCalendar();});
+ byId('calendar-day').addEventListener('change',()=>{clearCalendarForm();renderCalendar();window.GoogleCalendarModule?.onDateChange();});
  for(const [id,delta] of [['calendar-prev',-1],['calendar-next',1]]){
-  byId(id).addEventListener('click',()=>{const d=new Date((byId('calendar-day').value||day(new Date()))+'T12:00:00');d.setDate(d.getDate()+delta);byId('calendar-day').value=day(d);clearCalendarForm();renderCalendar();});
+  byId(id).addEventListener('click',()=>{const d=new Date((byId('calendar-day').value||day(new Date()))+'T12:00:00');d.setDate(d.getDate()+delta);byId('calendar-day').value=day(d);clearCalendarForm();renderCalendar();window.GoogleCalendarModule?.onDateChange();});
  }
- byId('calendar-today').addEventListener('click',()=>{byId('calendar-day').value=day(new Date());clearCalendarForm();renderCalendar();});
+ byId('calendar-today').addEventListener('click',()=>{byId('calendar-day').value=day(new Date());clearCalendarForm();renderCalendar();window.GoogleCalendarModule?.onDateChange();});
  byId('calendar-show-hidden').addEventListener('change',renderCalendar);
  byId('calendar-show-private').addEventListener('change',renderCalendar);
  byId('event-kind').addEventListener('change',changeKindDefaults);
