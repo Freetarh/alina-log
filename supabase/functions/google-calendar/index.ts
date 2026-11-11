@@ -188,7 +188,7 @@ async function syncShared(user) {
 async function pushFamilyEvent(user,id) {
  const {data:e,error}=await admin.from("family_events").select("*").eq("id",id).eq("family_id",user.family_id).maybeSingle();
  if(error)throw error;if(!e)throw new Error("Aftalen findes ikke.");
- if(e.created_by!==user.id)throw new Error("Kun aftalens opretter kan ændre den i dashboardet.");
+ if(e.created_by!==user.id&&e.visibility!=="family")throw new Error("Du har ikke adgang til at ændre denne aftale.");
  if(e.visibility!=="family"||!e.show_on_family_calendar)return {synced:false,reason:"Skjulte og private aftaler synkroniseres ikke til den fælles Google-kalender."};
  const {setting,token}=await authorizedShared(user);
  if(e.google_calendar_id&&e.google_calendar_id!==setting.google_calendar_id)throw new Error("Aftalen hører til en anden Google-kalender.");
@@ -212,9 +212,9 @@ async function pushFamilyEvent(user,id) {
  return {synced:true};
 }
 async function deleteFamilyEvent(user,id){
- const {data:e,error}=await admin.from("family_events").select("created_by,google_event_id,google_calendar_id").eq("id",id).eq("family_id",user.family_id).maybeSingle();
+ const {data:e,error}=await admin.from("family_events").select("created_by,visibility,google_event_id,google_calendar_id").eq("id",id).eq("family_id",user.family_id).maybeSingle();
  if(error)throw error;if(!e)return {synced:true};
- if(e.created_by!==user.id)throw new Error("Kun aftalens opretter kan slette aftalen i dashboardet.");
+ if(e.created_by!==user.id&&e.visibility!=="family")throw new Error("Du har ikke adgang til at slette denne aftale.");
  if(!e.google_event_id)return {synced:true};
  const {setting,token}=await authorizedShared(user);
  if(e.google_calendar_id!==setting.google_calendar_id)throw new Error("Aftalen er koblet til en anden kalender.");
@@ -251,6 +251,15 @@ async function handlePost(req) {
    await admin.from("google_calendar_connections").delete().eq("user_id",user.id);
    return json({ok:true},req);
  }
+ if(action==="sync-shared"){
+   const data=await syncShared(user);return json(data,req);
+ }
+ if(action==="push-family"){
+   const result=await pushFamilyEvent(user,String(body.id||""));return json(result,req);
+ }
+ if(action==="delete-family"){
+   const result=await deleteFamilyEvent(user,String(body.id||""));return json(result,req);
+ }
  const token=await googleToken(user.id);
  if(action==="calendars"){
    const items=await getCalendars(token);
@@ -277,15 +286,6 @@ async function handlePost(req) {
      connected_at:new Date().toISOString(),last_synced_at:null});
    if(error)throw error;
    return json({ok:true},req);
- }
- if(action==="sync-shared"){
-   const data=await syncShared(user);return json(data,req);
- }
- if(action==="push-family"){
-   const result=await pushFamilyEvent(user,String(body.id||""));return json(result,req);
- }
- if(action==="delete-family"){
-   const result=await deleteFamilyEvent(user,String(body.id||""));return json(result,req);
  }
  return fail("Ukendt handling.",req,404);
 }
