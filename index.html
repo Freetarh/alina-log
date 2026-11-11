@@ -286,23 +286,33 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 <section class="view" id="view-kalender" aria-label="Familiekalender">
   <div class="panel">
     <div class="sectionhead"><h2>Familiekalender</h2><button type="button" class="btn soft" id="calendar-refresh">Opdater</button></div>
-    <p class="fineprint">Fælles og private aftaler gemmes i Supabase. Google Kalender kan tilsluttes separat nedenfor.</p>
-    <div class="calendar-date-row">
-      <button type="button" class="btn" id="calendar-prev" aria-label="Forrige dag">‹</button>
-      <input type="date" id="calendar-day" aria-label="Vælg kalenderdag">
-      <button type="button" class="btn" id="calendar-next" aria-label="Næste dag">›</button>
+    <p class="fineprint">Vælg en dag i måneden for at se aftalerne. Fælles Google-aftaler vises her, mens personlige Google-aftaler findes under Google Kalender nedenfor.</p>
+    <div class="calendar-month-nav">
+      <button type="button" class="btn" id="calendar-prev" aria-label="Forrige måned">‹</button>
+      <h3 id="calendar-month-label" aria-live="polite">Måned</h3>
+      <button type="button" class="btn" id="calendar-next" aria-label="Næste måned">›</button>
       <button type="button" class="btn soft" id="calendar-today">I dag</button>
     </div>
+    <div class="calendar-weekday-row" aria-hidden="true"><span>Man</span><span>Tir</span><span>Ons</span><span>Tor</span><span>Fre</span><span>Lør</span><span>Søn</span></div>
+    <div id="calendar-month-grid" class="calendar-month-grid" role="group" aria-label="Vælg dag i kalenderen"></div>
+    <details class="calendar-jump"><summary>Gå til en bestemt dato</summary>
+      <label for="calendar-day" class="subtle small">Vælg dato</label><input type="date" id="calendar-day" aria-label="Vælg kalenderdag">
+    </details>
     <div class="calendar-filter">
       <label><input id="calendar-show-hidden" type="checkbox"> Vis skjulte aftaler</label>
       <label><input id="calendar-show-private" type="checkbox"> Vis mine private</label>
     </div>
-    <div class="row split"><strong class="small">Dagens aftaler</strong><span class="subtle small" id="calendar-count">0 vises</span></div>
+    <div class="calendar-day-header">
+      <div><h3 id="calendar-selected-label">Valgt dag</h3><span class="subtle small" id="calendar-count">0 vises</span></div>
+      <button type="button" class="btn primary" id="calendar-new">+ Ny aftale</button>
+    </div>
     <div class="calendar-list" id="calendar-list"></div>
     <p class="section-notice" id="calendar-status" role="status"></p>
   </div>
  
-  <div class="panel" id="google-calendar-panel">
+  <details class="panel calendar-secondary-section" id="google-calendar-panel">
+    <summary>Google Kalender og personlige aftaler <span aria-hidden="true">›</span></summary>
+    <div class="calendar-details-content">
     <div class="sectionhead"><h2>Google Kalender</h2><button class="btn soft" type="button" id="google-status-refresh">Opdater</button></div>
     <p class="fineprint">Forbind hver jeres Google-konto. Personlige Google-aftaler hentes kun til den konto, der er logget ind. Intet deles automatisk med den anden.</p>
     <p id="google-connection-label" class="subtle small">Kontrollerer forbindelse…</p>
@@ -349,9 +359,11 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
     </div>
     <div class="row" style="margin-top:12px"><button type="button" id="google-sync-shared" class="btn soft hidden">Synkroniser fælles Google-kalender</button></div>
     <p class="section-notice" id="google-message" role="status"></p>
-  </div>
-  <div class="panel">
-    <h2 id="calendar-form-heading">Ny aftale</h2>
+    </div>
+  </details>
+  <details class="panel calendar-secondary-section" id="calendar-editor">
+    <summary>Opret eller rediger aftale <span aria-hidden="true">›</span></summary>
+    <div class="calendar-details-content"><h2 id="calendar-form-heading">Ny aftale</h2>
     <form id="calendar-form">
       <div class="field"><label for="event-title">Titel</label><input id="event-title" type="text" maxlength="120" required placeholder="Fx lægebesøg eller hent medicin"></div>
       <div class="form-grid">
@@ -369,8 +381,8 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
       <div class="field"><label for="event-details">Noter (valgfrit)</label><textarea id="event-details" rows="2" maxlength="500"></textarea></div>
       <div class="row"><button class="btn primary" id="calendar-submit" type="submit">Gem aftale</button><button class="btn hidden" id="calendar-cancel" type="button">Annuller redigering</button></div>
       <p id="calendar-form-notice" class="notice" role="status"></p>
-    </form>
-  </div>
+    </form></div>
+  </details>
 </section>
 <section class="view" id="view-moduler" aria-label="Flere familiemoduler">
   <div class="panel">
