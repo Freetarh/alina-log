@@ -164,6 +164,7 @@ function clearMeal(){
 async function loadFood(force=false){
  const {family}=ctx();if(!family||busy.madplan||(!force&&Date.now()-last.madplan<45000))return;
  busy.madplan=true;
+ const requestedWeek=weekDays()[0];
  try{
   const d=weekDays();
   const [r,m]=await Promise.all([
@@ -171,9 +172,13 @@ async function loadFood(force=false){
    api.client.from("family_meal_plan").select("*").eq("family_id",family.id).gte("meal_date",d[0]).lte("meal_date",d[6]).order("meal_date").limit(100)
   ]);
   if(r.error)throw r.error;if(m.error)throw m.error;
-  if(ctx().family?.id!==family.id)return;
+  if(ctx().family?.id!==family.id||weekDays()[0]!==requestedWeek)return;
   recipes=r.data||[];meals=m.data||[];last.madplan=Date.now();recipeOptions();renderWeek();renderRecipes();
- }catch(e){notice("meal-notice","Kunne ikke hente madplan: "+e.message,true);}finally{busy.madplan=false;}
+ }catch(e){notice("meal-notice","Kunne ikke hente madplan: "+e.message,true);}
+ finally{
+  busy.madplan=false;
+  if(ctx().family?.id===family.id&&weekDays()[0]!==requestedWeek&&active==="madplan")void loadFood(true);
+ }
 }
 async function saveRecipe(e){
  e.preventDefault();const {family,user}=ctx();if(!family||!user)return;
