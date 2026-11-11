@@ -23,3 +23,49 @@ fieldset.calendar-mode{border:0;margin:0 0 15px;padding:0}.calendar-mode legend{
 .calendar-mode input{accent-color:var(--teal);margin-right:6px}
 .section-notice{font-size:.8rem;line-height:1.5;color:var(--muted)}
 @media(max-width:400px){.module-grid{gap:8px}.module-tile{padding:12px}.calendar-date-row .btn{padding:8px 9px}.calendar-item{padding:10px}.calendar-actions .tiny-btn{padding:6px}}
+
+/* Family calendar – month-first layout and a selected-day agenda. */
+.calendar-month-nav{display:flex;align-items:center;gap:8px;margin:16px 0 13px}
+.calendar-month-nav h3{margin:0;flex:1;text-align:center;font-weight:830;font-size:1.05rem;line-height:1.3;letter-spacing:-.025em}
+.calendar-month-nav .btn{min-width:42px;height:42px;display:grid;place-items:center;padding:0;font-size:1.15rem;flex-shrink:0}
+.calendar-month-nav #calendar-today{font-size:.77rem;padding:0 9px}
+.calendar-weekday-row,.calendar-month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.calendar-weekday-row{margin-bottom:6px}
+.calendar-weekday-row span{text-align:center;font-weight:760;font-size:.7rem;color:var(--muted);padding:7px 0}
+.calendar-month-grid{margin-bottom:11px}
+.calendar-day-cell{height:56px;min-width:0;border:1px solid transparent;border-radius:12px;background:#f7faf9;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:5px 1px;position:relative}
+.calendar-day-cell.is-outside{background:#fbfcfc;color:#a4b3b7}
+.calendar-day-cell.is-today:not(.is-selected){border-color:#82bdbb;background:#eaf7f4;color:#125963}
+.calendar-day-cell.is-selected{background:var(--teal);border-color:var(--teal);color:#fff}
+.calendar-day-number{font-weight:770;font-size:.85rem;line-height:1.1}
+.calendar-day-dots{height:10px;display:flex;align-items:center;gap:3px;color:#527579;font-weight:740}
+.calendar-dot{width:5px;height:5px;border-radius:99px;background:#338b92;display:block}
+.calendar-day-cell.is-selected .calendar-dot{background:#e7faf8}
+.calendar-day-cell.is-selected .calendar-day-dots{color:white}
+.calendar-day-dots small{font-size:.57rem;line-height:1}
+.calendar-jump{border-top:1px solid var(--edge);margin:14px 0 0;padding-top:11px}
+.calendar-jump summary{font-size:.77rem;color:var(--teal);font-weight:750;cursor:pointer}
+.calendar-jump label{display:block;margin:11px 0 5px}
+.calendar-jump input{padding:10px 12px;border-radius:10px;border:1px solid var(--edge);background:white;max-width:250px;width:100%}
+.calendar-filter{padding:11px 0;margin:13px 0 0;border-top:1px solid var(--edge);border-bottom:1px solid var(--edge)}
+.calendar-day-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 5px}
+.calendar-day-header h3{margin:0 0 4px;font-size:1.01rem}
+.calendar-day-header .btn{font-size:.79rem;flex-shrink:0;min-height:39px;padding:8px 10px}
+.calendar-list{margin-top:10px}
+.calendar-secondary-section{padding:0}
+.calendar-secondary-section > summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;padding:17px 18px;font-size:.91rem;font-weight:810;list-style:none}
+.calendar-secondary-section > summary::-webkit-details-marker{display:none}
+.calendar-secondary-section > summary span{color:var(--teal);font-size:1.24rem;transition:transform .15s ease;line-height:1}
+.calendar-secondary-section[open] > summary span{transform:rotate(90deg)}
+.calendar-details-content{border-top:1px solid var(--edge);padding:17px 18px 19px}
+.calendar-secondary-section[open] > summary{color:var(--teal)}
+.calendar-secondary-section .sectionhead{margin-bottom:10px}
+#calendar-status{min-height:1.2em}
+@media(max-width:380px){
+ .calendar-weekday-row,.calendar-month-grid{gap:3px}
+ .calendar-day-cell{height:49px;border-radius:10px}
+ .calendar-day-header h3{font-size:.93rem}
+ .calendar-month-nav{gap:5px}
+ .calendar-month-nav h3{font-size:.97rem}
+ .calendar-details-content{padding:15px 13px}
+}
