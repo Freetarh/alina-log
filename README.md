@@ -13,7 +13,8 @@ Et mobilvenligt, fælles dashboard for Frederik og Batoul med Supabase Auth/RLS.
 | Rengøring | Gentagne opgaver, ansvar (Begge/Frederik/Batoul), forfald, udført-historik og opgaveforslag |
 | Indkøb | Fælles liste, kategorier, mængder, afkrydsning og oprydning |
 | Madplan og opskrifter | Morgenmad/frokost/aftensmad pr. dag, ugerulning, opskrifter og ingredienser til indkøb |
-| Forside | Første version af dagens familieoverblik; kan tilpasses efter test |
+| Forside | Kompakt dagsoverblik: hurtig registrering, fælles aftaler, tilskud/rengøring, seneste måltid og aftensmad/indkøb |
+| Indstillinger | Konto, synkronisering, opdatering, familiekode og logout bag separat tandhjul og link under Mere |
 
 **Kode status:** Implementeret i GitHub og databaseskemaet er migreret. UI er syntax- og mock-testet, men de nye moduler mangler en fuld end-to-end-test på begge telefoner. Tidligere flaskelog og kalender→Google er allerede testet i appen.
 
@@ -24,7 +25,7 @@ Et mobilvenligt, fælles dashboard for Frederik og Batoul med Supabase Auth/RLS.
 - `growth.js` – WHO LMS og længde-/hovedomfangsregistreringer
 - `household.js` – supplementer og rengøring
 - `food.js` – indkøb, madplan og opskrifter
-- `home.js` – foreløbigt dags-overblik
+- `home.js` – dags-overblik med genveje til registreringer og kalender
 - `household.css` – mobilvenlige moduler
 - `google-calendar.js` – Google-visning og familiedeling
 - `supabase/functions/google-calendar/index.ts` – krypteret OAuth2-tokenhåndtering og synkronisering
@@ -89,8 +90,8 @@ Testene kontrollerer scripts/assets, unikke IDs, alle routes, WHO-mediantabeller
 
 ### Næste manuelle accepttest (begge telefoner)
 
-1. Genindlæs PWA'en, så den nye service worker henter samtlige moduler.
-2. Kontrollér gammel flaskelog, amningstimer og familiekalender.
+1. Genindlæs PWA'en, så den nye service worker henter samtlige moduler. Kontrollér forsiden og tandhjulet **Indstillinger**. Familiekode og logout må kun vises på indstillingssiden.
+2. Test forsidens knapper **Amning**, **Flaske**, **Ble** og **Aftale**, og kontrollér at de rigtige formularer åbner. Kontrollér også gammel flaskelog, amningstimer og familiekalender.
 3. Registrér en vægt/længde/hovedomfang og kontrollér kurverne.
 4. Registrér D-dråber/jern med ordineret dosis, og prøv fortryd.
 5. Opret, fuldfør og gentag en rengøringsopgave.
@@ -99,7 +100,7 @@ Testene kontrollerer scripts/assets, unikke IDs, alle routes, WHO-mediantabeller
 8. Opret en aftale i `Familie` direkte i Google og synkronisér til dashboardet. Kontrollér på Batouls telefon.
 9. Kontrollér privat deling: en aftale filtreret på `piller` må ikke vises hos den anden.
 
-Forsidens endelige prioritering kan ændres efter denne test.
+Forsiden er nu redesignet med fire prioriterede områder. Kontooplysninger ligger under **Indstillinger**, ikke på hver fane. Forsidens indhold kan justeres efter jeres erfaringer med daglig brug.
 
 ## Begrænsninger
 
