@@ -197,8 +197,23 @@ async function syncShared(user) {
      if(error)throw error;removed++;
    }
  }
+ // Retry local edits that were saved while Google was temporarily unavailable.
+ let pushed=0,pushFailed=0;
+ const {data:pending,error:pendingError}=await admin.from("family_events")
+   .select("id,created_at,google_event_id,google_calendar_id")
+   .eq("family_id",user.family_id).eq("google_dirty",true)
+   .eq("visibility","family").eq("show_on_family_calendar",true)
+   .gte("starts_at",from).lt("starts_at",to)
+   .limit(100);
+ if(pendingError)throw pendingError;
+ for(const item of pending||[]){
+   if(item.google_calendar_id&&item.google_calendar_id!==setting.google_calendar_id)continue;
+   if(!item.google_event_id&&Date.parse(item.created_at)<Date.parse(setting.connected_at))continue;
+   try{await pushFamilyEvent(user,item.id);pushed++;}
+   catch(err){console.error("Family event push failed",item.id,err?.message||String(err));pushFailed++;}
+ }
  await admin.from("family_google_calendar_settings").update({last_synced_at:new Date().toISOString()}).eq("family_id",user.family_id);
- return {imported,updated,removed,skipped,range:"180 dage tilbage og 540 dage frem",google_calendar:setting.google_calendar_name};
+ return {imported,updated,removed,skipped,pushed,pushFailed,range:"180 dage tilbage og 540 dage frem",google_calendar:setting.google_calendar_name};
 }
 async function pushFamilyEvent(user,id) {
  const {data:e,error}=await admin.from("family_events").select("*").eq("id",id).eq("family_id",user.family_id).maybeSingle();
