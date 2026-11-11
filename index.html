@@ -50,6 +50,7 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 </style>
 <link rel="stylesheet" href="./family-dashboard.css">
 <link rel="stylesheet" href="./household.css">
+<link rel="stylesheet" href="./health.css">
 </head>
 <body>
 <div class="shell">
@@ -389,6 +390,7 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
     <h2>Familiens moduler</h2>
     <p class="subtle small">Modulerne deler data mellem jeres telefoner. Forsiden viser et kort overblik over dagen.</p>
     <div class="module-grid">
+      <button type="button" class="module-tile" data-go="sundhed"><strong>Alinas sundhedskalender</strong><span>Lægebesøg, vaccinationer og opfølgninger</span></button>
       <button type="button" class="module-tile" data-go="tilskud"><strong>D-dråber og jern</strong><span>Plan, daglig registrering og historik</span></button>
       <button type="button" class="module-tile" data-go="rengoring"><strong>Rengøringsplan</strong><span>Opgaver, gentagelser og overblik</span></button>
       <button type="button" class="module-tile" data-go="indkob"><strong>Indkøbsliste</strong><span>Fælles liste og afkrydsning</span></button>
@@ -396,6 +398,10 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
     </div>
     <div class="settings-module-link"><button type="button" class="btn soft" data-go="indstillinger">Indstillinger og familiekode ›</button></div>
   </div>
+</section>
+<section class="view" id="view-sundhed" aria-label="Alinas sundhedskalender">
+  <div class="inner-links"><button type="button" class="btn soft" data-go="moduler">‹ Moduler</button><button type="button" class="btn soft" data-go="kalender">Familiekalender</button></div>
+  <div id="health-module"></div>
 </section>
 <section class="view" id="view-tilskud" aria-label="D-dråber og jerntilskud">
   <div class="inner-links"><button type="button" class="btn soft" data-go="moduler">‹ Moduler</button><button type="button" class="btn soft" data-go="overblik">Alinas log</button></div>
@@ -445,6 +451,7 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 <script src="./family-dashboard.js"></script>
 <script src="./growth.js"></script>
 <script src="./home.js"></script>
+<script src="./health.js"></script>
 <script src="./household.js"></script>
 <script src="./food.js"></script>
 <script src="./google-calendar.js"></script>
@@ -496,12 +503,13 @@ function validEntry(e){
 }
 function view(view){
  document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id==='view-'+view));
- const navGroup=['registrer','beregner','historik','vaegt'].includes(view)?'overblik':['tilskud','rengoring','indkob','madplan','indstillinger'].includes(view)?'moduler':view;
+ const navGroup=['registrer','beregner','historik','vaegt'].includes(view)?'overblik':['sundhed','tilskud','rengoring','indkob','madplan','indstillinger'].includes(view)?'moduler':view;
  $('settings-shortcut').classList.toggle('active',view==='indstillinger');
  document.querySelectorAll('#main-nav button').forEach(el=>{const selected=el.dataset.go===navGroup;el.classList.toggle('active',selected);selected?el.setAttribute('aria-current','page'):el.removeAttribute('aria-current')});
  window.FamilyDashboard?.onView(view);
  window.GrowthModule?.onView(view);
  window.HomeModule?.onView(view);
+ window.HealthModule?.onView(view);
  window.HouseholdModule?.onView(view);
  window.FoodModule?.onView(view);
  if(view==='kalender')window.GoogleCalendarModule?.onCalendarView();
@@ -511,6 +519,7 @@ function showGate(mode){
  window.FamilyDashboard?.reset();
  window.GrowthModule?.reset();
  window.HomeModule?.reset();
+ window.HealthModule?.reset();
  window.HouseholdModule?.reset();
  window.FoodModule?.reset();
  window.GoogleCalendarModule?.reset();
@@ -647,7 +656,7 @@ async function refreshData(){
     const r=await supabaseClient.from('alina_entries').select('*').eq('family_id',family.id).order('at',{ascending:false}).range(first,first+999);
     if(r.error)throw r.error;collected.push(...r.data);if(r.data.length<1000)break;
   }
-  entries=collected.map(dbToLocal);await refreshTimers();render();window.FamilyDashboard?.refresh();window.HomeModule?.refresh();window.HouseholdModule?.refresh();window.FoodModule?.refresh();
+  entries=collected.map(dbToLocal);await refreshTimers();render();window.FamilyDashboard?.refresh();window.HomeModule?.refresh();window.HealthModule?.refresh();window.HouseholdModule?.refresh();window.FoodModule?.refresh();
   $('sync-status').textContent='Senest opdateret '+humanClock(new Date());
  }catch(e){$('sync-status').textContent='Kunne ikke synkronisere';warn('Kunne ikke hente fælles data: '+errText(e),'account-notice')}
  finally{refreshing=false}
@@ -772,6 +781,7 @@ async function importJSON(ev){
 window.FamilyDashboard?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view});
  window.GrowthModule?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view});
  window.HomeModule?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view,openEntry:which=>{resetForm();setKind(which);view('registrer');},openEvent:()=>{window.FamilyDashboard?.beginNewEvent();view('kalender');requestAnimationFrame(()=>$('calendar-form').scrollIntoView({behavior:'smooth',block:'start'}));}});
+ window.HealthModule?.init({client:supabaseClient,getState:()=>({user,family}),go:view,refreshHome:()=>window.HomeModule?.forceRefresh?.(),refreshCalendar:()=>window.FamilyDashboard?.refresh()});
  window.HouseholdModule?.init({client:supabaseClient,getState:()=>({user,family}),go:view});
  window.FoodModule?.init({client:supabaseClient,getState:()=>({user,family}),go:view});
  window.GoogleCalendarModule?.init({client:supabaseClient,getState:()=>({user,family}),reloadCalendar:()=>window.FamilyDashboard?.refresh()});
