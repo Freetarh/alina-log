@@ -47,7 +47,7 @@ async function refresh(force=false){
    api.client.from("family_chores").select("due_on,completed").eq("family_id",family.id).eq("completed",false).lte("due_on",dToday),
    api.client.from("family_groceries").select("checked").eq("family_id",family.id).eq("checked",false),
    api.client.from("family_meal_plan").select("meal_date,meal_slot,title").eq("family_id",family.id).eq("meal_date",dToday).eq("meal_slot","dinner"),
-   api.client.from("family_events").select("starts_at,visibility,show_on_family_calendar").eq("family_id",family.id).eq("visibility","family").eq("show_on_family_calendar",true).gte("starts_at",start.toISOString()).lt("starts_at",end.toISOString())
+   api.client.from("family_events").select("starts_at,visibility,show_on_family_calendar").eq("family_id",family.id).eq("visibility","family").eq("show_on_family_calendar",true).is("google_removed_at",null).gte("starts_at",start.toISOString()).lt("starts_at",end.toISOString())
   ];
   const results=await Promise.all(req);
   for(const r of results)if(r.error)throw r.error;
