@@ -1,58 +1,106 @@
-# Familiens dashboard (Alina-log)
+# Familiedashboard · Alina
 
-Mobilvenlig privat familie-webapp til to voksne, med Alinas mad-/vægtlog og kalender.
+Et mobilvenligt, fælles dashboard for Frederik og Batoul med Supabase Auth/RLS. Tilgængeligt som GitHub Pages PWA. Appen er bevidst lille og uden særskilt familiemedlemsadministration.
 
-## Struktur
+## Moduler (november 2026)
 
-- `index.html` – navigation, login og eksisterende madlog (Supabase Auth)
-- `family-dashboard.js` / `family-dashboard.css` – vægtkurve, kalender og pladsholdere
-- `google-calendar.js` – valgfri brugerflade til Google-forbindelse
-- `supabase/functions/google-calendar/index.ts` – OAuth 2.0, tokenkryptering og Google Calendar API
-- `google-setup.html` – trinvis opsætning på telefon, inkl. browsergenereret krypteringsnøgle
-- `sw.js` / `manifest.webmanifest` – PWA
-- Supabase-projekt: `alina-log` (`lsqasyswqwbggkzmsyvz`)
+| Modul | Hvad er implementeret? |
+|---|---|
+| Alinas log | Flasker, amning/timere, bleer, vejning, mælkeberegner, historik og backup af eksisterende log |
+| Vækst | WHO vægt-for-alder (piger) med percentil og referencekurver; egne grafer for længde og hovedomfang |
+| Familiekalender | Dagvisning, private/fælles aftaler, Google OAuth og separat fælles Google-kalender |
+| D-dråber og jern | Daglig registrering, tidsstempel, noter, fortryd og valgfri dosisplan |
+| Rengøring | Gentagne opgaver, ansvar (Begge/Frederik/Batoul), forfald, udført-historik og opgaveforslag |
+| Indkøb | Fælles liste, kategorier, mængder, afkrydsning og oprydning |
+| Madplan og opskrifter | Morgenmad/frokost/aftensmad pr. dag, ugerulning, opskrifter og ingredienser til indkøb |
+| Forside | Første version af dagens familieoverblik; kan tilpasses efter test |
 
-## Status
+**Kode status:** Implementeret i GitHub og databaseskemaet er migreret. UI er syntax- og mock-testet, men de nye moduler mangler en fuld end-to-end-test på begge telefoner. Tidligere flaskelog og kalender→Google er allerede testet i appen.
 
-- Alinas registreringer, timere og mælkeberegner: i drift.
-- Vægtkurve og lokal familiekalender: i drift.
-- Google Kalender-forbindelse: klientkode og Edge Function deployet; **kræver Google Cloud OAuth-opsætning**.
-- Tilskud, rengøring, indkøb og madplan: placeholders, ikke implementeret.
-- Forsidens indhold er bevidst ikke fastlagt.
+## Filer og struktur
 
-## Google Kalender-opsætning
+- `index.html` – app shell, navigation og den eksisterende flaskelog
+- `family-dashboard.js` / `family-dashboard.css` – eksisterende kalender og vægtvisning
+- `growth.js` – WHO LMS og længde-/hovedomfangsregistreringer
+- `household.js` – supplementer og rengøring
+- `food.js` – indkøb, madplan og opskrifter
+- `home.js` – foreløbigt dags-overblik
+- `household.css` – mobilvenlige moduler
+- `google-calendar.js` – Google-visning og familiedeling
+- `supabase/functions/google-calendar/index.ts` – krypteret OAuth2-tokenhåndtering og synkronisering
+- `google-setup.html` – engangsopsætning af Google Cloud og Edge Function Secrets
+- `tests/dashboard-smoke.test.cjs` – dependency-free smoke-tests
+- `.github/workflows/dashboard-smoke.yml` – automatisk statisk test ved push
+- `sw.js`, `manifest.webmanifest` – PWA
 
-1. Følg `google-setup.html` (link i appens kalender).
-2. Aktivér Google Calendar API, opret OAuth Web application og brug nøjagtigt:
-   `https://lsqasyswqwbggkzmsyvz.supabase.co/functions/v1/google-calendar/callback`
-3. Tilføj Supabase Edge Function Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_TOKEN_KEY` (32 tilfældige bytes, Base64). Eventuelt `GOOGLE_APP_RETURN_URL`, hvis GitHub Pages-adressen afviger fra `https://freetarh.github.io/alina-log/`.
-4. Log ind i appen med de eksisterende familiebrugere, og forbind hver jeres Google-konto.
-5. For fuld fælles Google-kalender: Opret en **separat sekundær Google-kalender**, del den med partneren i Google, og vælg den i appen.
+Supabase-projekt: `lsqasyswqwbggkzmsyvz`. Repo: `Freetarh/alina-log`.
 
-**Læg aldrig Google Client Secret, den hemmelige krypteringsnøgle eller Google tokens i GitHub.** Tokenkrypteringen sker med AES-GCM på Edge Function, og refresh tokens ligger i en tabel uden klientadgang.
+## WHO vægt-for-alder
 
-I Googles eksterne testtilstand udløber refresh tokens til kalenderadgang sædvanligvis efter syv dage. Konti kan derfor skulle forbindes igen indtil produktionsopsætning er på plads.
+Fødselsdato: **6. oktober 2026**. WHO Child Growth Standards, piger, vægt-for-alder:
 
-## Fortrolighed og synkronisering
+- Uge 0–13: officiel ugentlig LMS-tabel
+- Måned 0–24: officiel månedlig LMS-tabel
+- Linjerne på grafen viser WHO −2 SD, −1 SD, median, +1 SD og +2 SD, vægt i kg. Det ene lag med målepunkter viser Alinas faktiske loggede vejninger.
+- Percentil fra LMS-z-score, beregnet med normalfordelingens CDF. Interpolation mellem tabellerne gør tallet *omtrentligt*.
+- Vægtpercentilen er ikke en diagnose, og ændringer i vægt, længde, hovedomfang og trivsel bør vurderes sammen med sundhedspersonale.
 
-- Personlige aftaler fra en Google-konto hentes som udgangspunkt kun til kontoejerens egen visning og kopieres **ikke** til familiedatabasen.
-- Hver person kan vælge **Del mine Google-kalenderaftaler**. Deling er fra som standard. Et særskilt serverkald viser så aftalerne til den anden familiebruger, med alle skjulte begivenheder og nøgleordsfiltre håndhævet på serveren.
-- Markering `private` på Google-aftalen bliver også udelukket fra deling.
-- Nøgleordsfiltre (fx `piller`) gælder tilbagevendende påmindelser og er bruger- og kalenderspecifikke.
-- Lokale familieaftaler har valg `family` eller `private`. RLS sikrer, at kun ejeren læser private aftaler; begge familiemedlemmer må redigere familieaftaler.
-- At skjule en **allerede synkroniseret** fælles Google-aftale gælder kun dashboardets visning, ikke den sekundære Google-kalender. Man kan ikke konvertere en Google-delt aftale direkte til privat uden at fjerne den delte Google-kopi.
-- En sekundær fælles Google-kalender synkroniseres ved at åbne kalenderen (højst hvert femte minut pr. åben session) eller ved at trykke synkroniser. Google→Supabase importerer/opdaterer og markerer fjernede events som inaktive; lokale familieaftaler synkroniseres ved oprettelse/ændring, og mislykkede push-forsøg prøves igen ved næste sync.
-- Synkronisering er **ikke en baggrundstjeneste**, når begge telefoner har appen lukket. Der er heller ikke push-notifikationer endnu.
-- Kalenderens Google-sync er begrænset til omtrent 180 dage bagud og 540 dage fremad. Meget store kalendere kan overskride synkroniseringsgrænsen.
+WHO-kilder:
+- https://www.who.int/tools/child-growth-standards/standards/weight-for-age
+- https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/indicators/weight-for-age/wfa-girls-0-13-zscores.pdf
+- https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/indicators/weight-for-age/wfa-girls-0-5-zscores.pdf
 
-## Manuelle tests efter OAuth-opsætning
+## D-dråber og jern
 
-1. Log ind på hver telefon, og bekræft, at Google-forbindelserne viser korrekt konto.
-2. Kontroller, at private Google-aftaler ikke vises på partnerens login.
-3. Indstil et nøgleordsfilter (`piller`) og aktivér eksplicit deling. Kontroller, at en almindelig aftale vises hos partneren, men ikke en aftale med det ord.
-4. Opret et Google-privat arrangement, og kontroller, at det aldrig vises på partnerens login.
-5. Vælg en separat fælles Google-kalender. Opret en fælles aftale i dashboardet og kontroller, at den optræder i Google. Rediger den i Google, synkroniser igen, og kontroller opdateringen i dashboardet.
-6. Bekræft, at lokale madregistreringer og amningstimer stadig virker.
-7. Tjek, at en frakoblet Google-konto ikke afslører tidligere hentede aftaler i appen.
+Tilskudsplanerne oprettes med **tomt dosisfelt**. Forældrene angiver selv ordineret dosis og tidspunkt; appen må ikke selv foreslå en medicinsk dosis. Tidsplanen er kun informativ. Der udsendes endnu ikke push-notifikationer.
 
-**Status for live Google-tests:** Afventer Google Cloud OAuth-klient og de nødvendige Supabase-secrets.
+## Opskrifter og indkøb
+
+Hver ingrediens skrives på sin egen linje (for eksempel `2 stk løg`). En opskrift kan kopiere ingredienser til indkøbslisten. Ugens planlagte opskrifter kan også kopieres samlet. Eksisterende ikke-afkrydsede varer med samme navn (ignorerer forskel på store/små bogstaver) tilføjes ikke igen. Dette er ikke et lagerstyringssystem eller ernæringsberegning.
+
+Rengøringsopgaver gentages efter 1, 7, 14, 30 eller valgfrit antal **dage**; der er ikke en separat kalendermånedsregel endnu. Engangsopgaver markeres færdige.
+
+## Google Kalender
+
+- Begge Google-konti er forbundet. En separat Google-kalender `Familie` er valgt.
+- Dashboard → Google blev testet på telefonen 11. november 2026.
+- Google → Dashboard og visning på Batouls telefon er **ikke** færdigtestet.
+- Personlige kalendere forbliver private som standard, og nøgleord/individuel skjulning filtreres på serveren for delt visning.
+- En separat fælles Google-kalender synkroniseres manuelt eller når kalenderen åbnes. Synkroniseringen fortsætter ikke, når begge apps er helt lukkede.
+- Google Cloud OAuth-secrets opbevares kun i Supabase Edge Function Secrets; refresh tokens opbevares server-side krypteret med AES-GCM.
+- I Googles testtilstand kan refresh tokens udløbe efter ca. 7 dage, hvilket kræver genforbindelse.
+- Se `google-setup.html` for trin-for-trin opsætning. **Commit aldrig Client Secret, tokenkrypteringsnøgle eller brugertokens.**
+
+## Dataadgang
+
+Alle nye tabeller har RLS og kræver, at `auth.uid()` er registreret i `alina_members` for den konkrete `family_id`. Familietilknytning og opretter-/registreringsidentitet kan ikke ændres efter oprettelse. Opskrifter og måltider har familiebundne fremmednøgler; opgavehistorik kontrollerer også familiens ejerskab. Tilskudslog tillader fortryd/sletning i UI.
+
+Der er fortsat tidligere Supabase-advarsler om de eksisterende `alina_family_create` og `alina_family_join` SECURITY DEFINER-funktioner samt deaktiveret leaked-password-beskyttelse. Disse advarsler er ikke indført af de nye moduler og kræver særskilt gennemgang.
+
+## Test
+
+Automatisk, uden ekstern afhængighed:
+
+```bash
+node --test tests/dashboard-smoke.test.cjs
+```
+
+Testene kontrollerer scripts/assets, unikke IDs, alle routes, WHO-mediantabeller og simulering af modulers rendering. De erstatter ikke en rigtig test med Google OAuth og Supabase-adgang på telefonerne.
+
+### Næste manuelle accepttest (begge telefoner)
+
+1. Genindlæs PWA'en, så den nye service worker henter samtlige moduler.
+2. Kontrollér gammel flaskelog, amningstimer og familiekalender.
+3. Registrér en vægt/længde/hovedomfang og kontrollér kurverne.
+4. Registrér D-dråber/jern med ordineret dosis, og prøv fortryd.
+5. Opret, fuldfør og gentag en rengøringsopgave.
+6. Tilføj og afkryds en vare på begge telefoner.
+7. Opret en opskrift, planlæg den på en dag, og send ingredienser til indkøb.
+8. Opret en aftale i `Familie` direkte i Google og synkronisér til dashboardet. Kontrollér på Batouls telefon.
+9. Kontrollér privat deling: en aftale filtreret på `piller` må ikke vises hos den anden.
+
+Forsidens endelige prioritering kan ændres efter denne test.
+
+## Begrænsninger
+
+Alle datamutationer kræver internet. Hjemmeoversigt er en første version. Ingen push-påmindelser, avanceret gentagelse af lægeaftaler, fuld offline-tilstand, ernæringsberegninger eller fuld kalender-baggrundssynkronisering endnu.
