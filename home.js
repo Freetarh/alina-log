@@ -28,6 +28,7 @@ function render(){
  const due=chores.filter(c=>!c.completed&&c.due_on<=today).sort((a,b)=>a.due_on.localeCompare(b.due_on));
  const shoppingCount=groceries.filter(x=>!x.checked).length;
  const dinner=meals.find(m=>m.meal_date===today&&m.meal_slot==="dinner");
+ const nextHealth=window.HealthModule?.nextSummary(data?.health||[]);
  const lastFeed=latestFeed(entries),lastWeight=entries.filter(e=>e.kind==="weight"&&Number(e.grams)>0).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at))[0];
  const recent=entries.filter(e=>Date.parse(e.at)>=Date.now()-86400000&&Date.parse(e.at)<=Date.now());
  const bottleMl=recent.filter(e=>e.kind==="bottle").reduce((s,e)=>s+Number(e.taken||0),0);
@@ -64,6 +65,11 @@ function render(){
   '<div class="home-divider"></div>'+
   '<div class="home-section-head"><h2>Husk i dag</h2><button type="button" data-home-go="tilskud" class="home-text-action">Tilskud <span aria-hidden="true">›</span></button></div>'+
   (haveData?(supplementRows||'<p class="home-empty-note">Ingen aktive tilskudsplaner.</p>'):'<p class="home-empty-note">Henter tilskud…</p>')+
+  '<div class="home-check-row home-health-row"><span class="home-status-icon" aria-hidden="true">+</span>'+
+  '<div class="item-main"><strong>Alinas sundhed</strong><span class="home-secondary">'+
+  (nextHealth?esc(nextHealth.title)+' · '+esc(nextHealth.booked?'Booket '+nextHealth.dateLabel:
+  'Vejledende '+nextHealth.dateLabel+(nextHealth.needsReview?' · kontrollér om gennemført':'')):"Alle standardbesøg er markeret gennemført")+
+  '</span></div><button type="button" data-home-go="sundhed" class="home-text-action home-side-action">Åbn <span aria-hidden="true">›</span></button></div>'+
   '<div class="home-check-row home-chore-row"><span class="home-status-icon" aria-hidden="true">✓</span><div class="item-main"><strong>Rengøring</strong>'+
   '<span class="home-secondary">'+(haveData?(due.length?due.length+" opgaver skal klares"+(due[0]?.title?" · "+esc(due[0].title):""):"Ingen forfaldne opgaver"):"Henter opgaver…")+'</span></div>'+
   '<button type="button" data-home-go="rengoring" class="home-text-action home-side-action">Åbn <span aria-hidden="true">›</span></button></div>'+
@@ -92,6 +98,8 @@ async function refresh(force=false){
    api.client.from("family_chores").select("title,due_on,completed").eq("family_id",family.id).eq("completed",false).lte("due_on",d),
    api.client.from("family_groceries").select("checked").eq("family_id",family.id).eq("checked",false),
    api.client.from("family_meal_plan").select("meal_date,meal_slot,title").eq("family_id",family.id).eq("meal_date",d).eq("meal_slot","dinner"),
+   api.client.from("family_health_visits").select("id,milestone_key,title,visit_kind,expected_on,booked_start,booked_end,completed_on,notes,calendar_event_id")
+    .eq("family_id",family.id).limit(150),
    api.client.from("family_events").select("title,starts_at,google_all_day,visibility,show_on_family_calendar")
     .eq("family_id",family.id).eq("visibility","family").eq("show_on_family_calendar",true)
     .is("google_removed_at",null).gte("starts_at",start.toISOString()).lt("starts_at",end.toISOString()).order("starts_at").limit(30)
@@ -99,7 +107,7 @@ async function refresh(force=false){
   const all=await Promise.all(requests);
   for(const r of all)if(r.error)throw r.error;
   if(sequence!==epoch||ctx().family?.id!==family.id)return;
-  data=Object.fromEntries(all.map((r,i)=>[["supplements","doses","chores","groceries","meals","events"][i],r.data||[]]));
+  data=Object.fromEntries(all.map((r,i)=>[["supplements","doses","chores","groceries","meals","health","events"][i],r.data||[]]));
   last=Date.now();
  }catch(e){
   if(sequence!==epoch)return;
@@ -122,5 +130,5 @@ function init(config){
 function onView(name){if(name==="hjem"){render();void refresh(true);}}
 function update(){if($("view-hjem")?.classList.contains("active")){render();void refresh();}}
 function reset(){epoch++;data=null;last=0;loading=false;status="";if(api)render();}
-window.HomeModule={init,onView,refresh:update,reset};
+window.HomeModule={init,onView,refresh:update,forceRefresh:()=>refresh(true),reset};
 })();
