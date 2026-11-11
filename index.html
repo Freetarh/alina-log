@@ -290,6 +290,42 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
     <div class="calendar-list" id="calendar-list"></div>
     <p class="section-notice" id="calendar-status" role="status"></p>
   </div>
+ 
+  <div class="panel" id="google-calendar-panel">
+    <div class="sectionhead"><h2>Google Kalender</h2><button class="btn soft" type="button" id="google-status-refresh">Opdater</button></div>
+    <p class="fineprint">Forbind hver jeres Google-konto. Personlige Google-aftaler hentes kun til den konto, der er logget ind. Intet deles automatisk med den anden.</p>
+    <p id="google-connection-label" class="subtle small">Kontrollerer forbindelse…</p>
+    <div class="row" style="margin:12px 0">
+      <button type="button" id="google-connect" class="btn primary hidden">Forbind min Google-konto</button>
+      <button type="button" id="google-disconnect" class="btn hidden">Afbryd Google</button>
+    </div>
+    <div id="google-setup" class="module-placeholder hidden">
+      Google-login kræver først, at Google Cloud OAuth er tilknyttet Supabase. Se opsætningsvejledningen i projektet. Appens kalender fungerer fortsat uden Google.
+    </div>
+    <div id="google-connected-options" class="hidden">
+      <div class="hr"></div>
+      <h3>Mine Google-aftaler</h3>
+      <div class="field"><label for="google-calendars">Min Google-kalender</label><select id="google-calendars"></select></div>
+      <div class="calendar-filter">
+        <label><input type="checkbox" id="google-show-personal" checked> Vis mine Google-aftaler</label>
+        <label><input type="checkbox" id="google-show-hidden"> Vis skjulte Google-aftaler</label>
+      </div>
+      <p class="fineprint" id="google-google-account-hint"></p>
+      <div class="row split"><strong class="small">Mine aftaler</strong><span class="subtle small" id="google-personal-count"></span></div>
+      <div class="calendar-list" id="google-personal-list"></div>
+    </div>
+    <div class="hr"></div>
+    <h3>Fælles Google-kalender</h3>
+    <p class="fineprint">Brug en separat Google-kalender til fælles aftaler – aldrig en af jeres primære kalendere. Når den vælges, bliver dens aftaler tilgængelige for jer begge i familiedashboardet. Skjulte og private aftaler bliver ikke sendt fra dashboardet til Google.</p>
+    <p id="google-shared-label" class="subtle small">Ingen fælles Google-kalender valgt.</p>
+    <div id="google-shared-select-wrap" class="hidden">
+      <div class="field"><label for="google-shared-select">Fælles kalender i Google</label><select id="google-shared-select"><option value="">Vælg kalender</option></select>
+        <p class="help">Kalenderen skal først oprettes i Google Kalender og deles med din partner dér.</p></div>
+      <button type="button" id="google-shared-save" class="btn">Brug denne som familiekalender</button>
+    </div>
+    <div class="row" style="margin-top:12px"><button type="button" id="google-sync-shared" class="btn soft hidden">Synkroniser fælles Google-kalender</button></div>
+    <p class="section-notice" id="google-message" role="status"></p>
+  </div>
   <div class="panel">
     <h2 id="calendar-form-heading">Ny aftale</h2>
     <form id="calendar-form">
@@ -337,6 +373,7 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0"></script>
 <script src="./family-dashboard.js"></script>
+<script src="./google-calendar.js"></script>
 <script>
 (function () {
 'use strict';
@@ -388,10 +425,12 @@ function view(view){
  const navGroup=['registrer','beregner','historik','vaegt'].includes(view)?'overblik':view;
  document.querySelectorAll('#main-nav button').forEach(el=>{const selected=el.dataset.go===navGroup;el.classList.toggle('active',selected);selected?el.setAttribute('aria-current','page'):el.removeAttribute('aria-current')});
  window.FamilyDashboard?.onView(view);
+ if(view==='kalender')window.GoogleCalendarModule?.onCalendarView();
  window.scrollTo({top:0,behavior:'instant'});
 }
 function showGate(mode){
  window.FamilyDashboard?.reset();
+ window.GoogleCalendarModule?.reset();
  activeTimers={breast:null,bottle:null};tickTimers();
  $('cloud-gate').classList.remove('hidden');$('app-main').classList.add('hidden');$('main-nav').classList.add('hidden');$('cloud-account').classList.add('hidden');
  $('auth-pane').classList.toggle('hidden',mode!=='auth');$('family-pane').classList.toggle('hidden',mode!=='family');
@@ -648,6 +687,7 @@ async function importJSON(ev){
  finally{$('import-json').disabled=false;await refreshData()}
 }
 window.FamilyDashboard?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view});
+ window.GoogleCalendarModule?.init({client:supabaseClient,getState:()=>({user,family}),reloadCalendar:()=>window.FamilyDashboard?.refresh()});
 $('history-date').value=localDay(new Date());resetForm();render();showGate('auth');
 setInterval(tickTimers,1000);
 document.querySelectorAll('[data-open-timer]').forEach(el=>el.addEventListener('click',()=>{resetForm();setKind(el.dataset.openTimer);view('registrer')}));
