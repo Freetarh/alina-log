@@ -194,10 +194,14 @@ async function saveMeal(e){
  if(!meal_date||!title||!Object.keys(slotLabel).includes(meal_slot)){notice("meal-notice","Udfyld dato, måltid og navn.",true);return;}
  $("meal-save").disabled=true;
  try{
-  const {error}=await api.client.from("family_meal_plan").upsert({
-   family_id:family.id,meal_date,meal_slot,title,recipe_id,note:$("meal-note").value.trim(),created_by:user.id,updated_at:new Date().toISOString()
-  },{onConflict:"family_id,meal_date,meal_slot"});
-  if(error)throw error;
+  const {data:existing,error:findError}=await api.client.from("family_meal_plan")
+    .select("id").eq("family_id",family.id).eq("meal_date",meal_date).eq("meal_slot",meal_slot).maybeSingle();
+  if(findError)throw findError;
+  const row={title,recipe_id,note:$("meal-note").value.trim(),updated_at:new Date().toISOString()};
+  const result=existing?
+   await api.client.from("family_meal_plan").update(row).eq("family_id",family.id).eq("id",existing.id):
+   await api.client.from("family_meal_plan").insert({...row,family_id:family.id,meal_date,meal_slot,created_by:user.id});
+  if(result.error)throw result.error;
   clearMeal();const start=monday();const target=new Date(meal_date+"T12:00:00");
   weekOffset=Math.round((target-start)/(7*86400000));
   await loadFood(true);notice("meal-notice","Måltidet er gemt i ugeplanen.");
