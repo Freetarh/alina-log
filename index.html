@@ -89,6 +89,7 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 
 <main id="app-main" class="hidden">
 <section class="view active" id="view-hjem" aria-label="Hjem">
+  <div id="home-glance"></div>
   <div class="panel">
     <span class="module-label">Midlertidig forside</span>
     <h2 style="margin-top:9px">Her samler vi familiens overblik</h2>
@@ -424,6 +425,7 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0"></script>
 <script src="./family-dashboard.js"></script>
 <script src="./growth.js"></script>
+<script src="./home.js"></script>
 <script src="./household.js"></script>
 <script src="./food.js"></script>
 <script src="./google-calendar.js"></script>
@@ -479,6 +481,7 @@ function view(view){
  document.querySelectorAll('#main-nav button').forEach(el=>{const selected=el.dataset.go===navGroup;el.classList.toggle('active',selected);selected?el.setAttribute('aria-current','page'):el.removeAttribute('aria-current')});
  window.FamilyDashboard?.onView(view);
  window.GrowthModule?.onView(view);
+ window.HomeModule?.onView(view);
  window.HouseholdModule?.onView(view);
  window.FoodModule?.onView(view);
  if(view==='kalender')window.GoogleCalendarModule?.onCalendarView();
@@ -487,6 +490,7 @@ function view(view){
 function showGate(mode){
  window.FamilyDashboard?.reset();
  window.GrowthModule?.reset();
+ window.HomeModule?.reset();
  window.HouseholdModule?.reset();
  window.FoodModule?.reset();
  window.GoogleCalendarModule?.reset();
@@ -623,7 +627,7 @@ async function refreshData(){
     const r=await supabaseClient.from('alina_entries').select('*').eq('family_id',family.id).order('at',{ascending:false}).range(first,first+999);
     if(r.error)throw r.error;collected.push(...r.data);if(r.data.length<1000)break;
   }
-  entries=collected.map(dbToLocal);await refreshTimers();render();window.FamilyDashboard?.refresh();window.HouseholdModule?.refresh();window.FoodModule?.refresh();
+  entries=collected.map(dbToLocal);await refreshTimers();render();window.FamilyDashboard?.refresh();window.HomeModule?.refresh();window.HouseholdModule?.refresh();window.FoodModule?.refresh();
   $('sync-status').textContent='Senest opdateret '+humanClock(new Date());
  }catch(e){$('sync-status').textContent='Kunne ikke synkronisere';warn('Kunne ikke hente fælles data: '+errText(e),'account-notice')}
  finally{refreshing=false}
@@ -747,6 +751,7 @@ async function importJSON(ev){
 }
 window.FamilyDashboard?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view});
  window.GrowthModule?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view});
+ window.HomeModule?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view});
  window.HouseholdModule?.init({client:supabaseClient,getState:()=>({user,family}),go:view});
  window.FoodModule?.init({client:supabaseClient,getState:()=>({user,family}),go:view});
  window.GoogleCalendarModule?.init({client:supabaseClient,getState:()=>({user,family}),reloadCalendar:()=>window.FamilyDashboard?.refresh()});
