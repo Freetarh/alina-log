@@ -10,7 +10,7 @@ const datetime=d=>day(d)+"T"+String(d.getHours()).padStart(2,"0")+":"+String(d.g
 const daysAgo=(dateStr)=>Math.round((new Date(day(new Date())+"T12:00:00")-new Date(dateStr+"T12:00:00"))/86400000);
 const labelSupplement={vitamin_d:"D-dråber",iron:"Jern"};
 const note=(id,msg,error=false)=>{const el=$(id);if(el){el.textContent=msg;el.classList.toggle("error",Boolean(error));}};
-let api=null,plans=[],doses=[],chores=[],history=[],members=[],choreEdit=null,showDone=false;
+let api=null,plans=[],doses=[],chores=[],history=[],choreEdit=null,showDone=false;
 let loading={tilskud:false,rengoring:false},last={tilskud:0,rengoring:0},active="";
 const ctx=()=>api?.getState()||{};
 function rootSupp(){
@@ -118,28 +118,23 @@ function rootChores(){
   '<form id="chore-form"><div class="field"><label for="chore-title">Opgave</label><input id="chore-title" maxlength="120" required placeholder="Fx Rengør badeværelse"></div>'+
   '<div class="form-grid"><div class="field"><label for="chore-due">Næste dato</label><input id="chore-due" type="date" required></div>'+
   '<div class="field"><label for="chore-repeat">Gentagelse</label><select id="chore-repeat"><option value="0">En gang</option><option value="1">Hver dag</option><option value="7">Hver uge</option><option value="14">Hver 14. dag</option><option value="30">Hver 30. dag</option></select></div></div>'+
-  '<div class="field"><label for="chore-person">Ansvarlig</label><select id="chore-person"><option value="">Begge</option></select></div>'+
+  '<div class="field"><label for="chore-person">Ansvarlig</label><select id="chore-person"><option>Begge</option><option>Frederik</option><option>Batoul</option></select></div>'+
   '<div class="field"><label for="chore-details">Beskrivelse (valgfri)</label><input id="chore-details" maxlength="350" placeholder="Evt. fremgangsmåde"></div>'+
   '<div class="row"><button type="submit" class="btn primary" id="chore-save">Gem opgave</button><button type="button" class="btn hidden" id="chore-cancel">Annuller</button></div></form></div>'+
   '<div class="panel"><h2>Senest udført</h2><div id="chore-history"></div></div>';
  $("chore-due").value=day(new Date());
 }
-function fillChorePeople(){
- const current=ctx().user?.id,el=$("chore-person"),value=el.value;
- el.innerHTML='<option value="">Begge</option>'+members.map(m=>'<option value="'+esc(m.user_id)+'">'+(m.user_id===current?"Dig":"Den anden voksne")+'</option>').join("");
- el.value=members.some(x=>x.user_id===value)?value:"";
-}
+
 function dueLabel(dateText){
  const diff=-daysAgo(dateText);
  return diff<0?Math.abs(diff)+" dage forsinket":diff===0?"I dag":diff===1?"I morgen":human(dateText+"T12:00:00");
 }
 function recurLabel(n){return ({0:"En gang",1:"Dagligt",7:"Ugentligt",14:"Hver 14. dag",30:"Hver 30. dag"})[n]||("Hver "+n+". dag");}
 function renderChores(){
- fillChorePeople();
  const current=ctx().user?.id;
  const arr=chores.filter(x=>showDone||!x.completed).sort((a,b)=>Number(a.completed)-Number(b.completed)||a.due_on.localeCompare(b.due_on));
  $("chore-list").innerHTML=arr.length?arr.map(c=>{
-  const who=!c.assigned_to?"Begge":c.assigned_to===current?"Dig":"Den anden voksne";
+  const who=c.responsible||"Begge";
   return '<div class="house-card '+(c.completed?"house-muted":"")+'"><div class="row split"><h3>'+esc(c.title)+'</h3><span class="house-tag">'+(c.completed?"Afsluttet":esc(dueLabel(c.due_on)))+'</span></div>'+
    '<p class="fineprint">'+esc(recurLabel(c.repeat_days))+" · "+esc(who)+(c.details?" · "+esc(c.details):"")+'</p>'+
    '<div class="row">'+(c.completed?'<button type="button" class="btn soft" data-chore-reopen="'+c.id+'">Genåbn</button>':'<button type="button" class="btn primary" data-chore-done="'+c.id+'">Udført</button>')+
@@ -154,15 +149,13 @@ async function loadChores(force=false){
  const {family}=ctx();if(!family||loading.rengoring||(!force&&Date.now()-last.rengoring<45000))return;
  loading.rengoring=true;
  try{
-  const [c,h,m]=await Promise.all([
+  const [c,h]=await Promise.all([
    api.client.from("family_chores").select("*").eq("family_id",family.id).order("due_on").limit(500),
-   api.client.from("family_chore_history").select("id,chore_id,completed_at,completed_by").eq("family_id",family.id).order("completed_at",{ascending:false}).limit(50),
-   api.client.from("alina_members").select("user_id").eq("family_id",family.id)
+   api.client.from("family_chore_history").select("id,chore_id,completed_at,completed_by").eq("family_id",family.id).order("completed_at",{ascending:false}).limit(50)
   ]);
   if(c.error)throw c.error;if(h.error)throw h.error;
   if(ctx().family?.id!==family.id)return;
   chores=c.data||[];history=h.data||[];
-  members=m.error?[{user_id:ctx().user.id}]:(m.data||[]);
   last.rengoring=Date.now();renderChores();
  }catch(e){note("chore-notice","Kunne ikke hente opgaver: "+e.message,true);}finally{loading.rengoring=false;}
 }
@@ -175,7 +168,7 @@ async function saveChore(e){
  const title=$("chore-title").value.trim(),due_on=$("chore-due").value,repeat_days=Number($("chore-repeat").value);
  if(!title||!due_on||!Number.isInteger(repeat_days)){note("chore-notice","Udfyld titel og dato.",true);return;}
  $("chore-save").disabled=true;
- const row={title,due_on,repeat_days,details:$("chore-details").value.trim().slice(0,350),assigned_to:$("chore-person").value||null,updated_at:new Date().toISOString()};
+ const row={title,due_on,repeat_days,details:$("chore-details").value.trim().slice(0,350),responsible:$("chore-person").value,updated_at:new Date().toISOString()};
  try{
   const result=choreEdit?await api.client.from("family_chores").update(row).eq("family_id",family.id).eq("id",choreEdit):
    await api.client.from("family_chores").insert({...row,family_id:family.id});
@@ -215,7 +208,7 @@ function choreClick(e){
  if(b.dataset.choreEdit){
   const c=chores.find(c=>c.id===id);if(!c)return;choreEdit=id;
   $("chore-title").value=c.title;$("chore-due").value=c.due_on;$("chore-repeat").value=c.repeat_days;
-  $("chore-person").value=c.assigned_to||"";$("chore-details").value=c.details||"";
+  $("chore-person").value=c.responsible||"Begge";$("chore-details").value=c.details||"";
   $("chore-save").textContent="Gem ændringer";$("chore-form-title").textContent="Ret opgave";$("chore-cancel").classList.remove("hidden");
   $("chore-form").scrollIntoView({behavior:"smooth",block:"start"});
  }
@@ -231,6 +224,6 @@ function init(config){
 }
 function onView(v){active=v;if(v==="tilskud")void loadSupp(true);if(v==="rengoring")void loadChores(true);}
 function refresh(){if(active==="tilskud"&&$("view-tilskud").classList.contains("active"))void loadSupp();if(active==="rengoring"&&$("view-rengoring").classList.contains("active"))void loadChores();}
-function reset(){plans=[];doses=[];chores=[];history=[];members=[];choreEdit=null;showDone=false;last={tilskud:0,rengoring:0};active="";loading={tilskud:false,rengoring:false};if(api){clearChore();renderSupp();renderChores();note("supplement-notice","");note("chore-notice","");}}
+function reset(){plans=[];doses=[];chores=[];history=[];choreEdit=null;showDone=false;last={tilskud:0,rengoring:0};active="";loading={tilskud:false,rengoring:false};if(api){clearChore();renderSupp();renderChores();note("supplement-notice","");note("chore-notice","");}}
 window.HouseholdModule={init,onView,refresh,reset};
 })();
