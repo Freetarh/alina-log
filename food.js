@@ -4,7 +4,6 @@
 const $=id=>document.getElementById(id),safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const localDay=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const dateLabel=d=>new Date(d+"T12:00:00").toLocaleDateString("da-DK",{weekday:"short",day:"numeric",month:"short"});
-const slotLabel={breakfast:"Morgenmad",lunch:"Frokost",dinner:"Aftensmad"};
 const cats=["Frugt og grønt","Køl og mejeri","Kød og fisk","Brød og korn","Tørvarer","Husholdning","Andet"];
 let api=null,items=[],recipes=[],meals=[],groEdit=null,recipeEdit=null,weekOffset=0,showChecked=true,searchText="";
 let busy={indkob:false,madplan:false},last={indkob:0,madplan:0},active="";
@@ -34,9 +33,9 @@ function rootFood(){
  '<div id="meal-week" class="house-stack"></div>'+
  '<button type="button" id="meal-groceries" class="btn soft" style="margin-top:12px">Tilføj ugens opskriftsingredienser til indkøb</button>'+
  '<p id="meal-notice" class="section-notice" role="status"></p></div>'+
- '<div class="panel"><h2>Planlæg et måltid</h2><form id="meal-form">'+
- '<div class="form-grid"><div class="field"><label for="meal-date">Dato</label><input type="date" id="meal-date" required></div>'+
- '<div class="field"><label for="meal-slot">Måltid</label><select id="meal-slot"><option value="dinner">Aftensmad</option><option value="lunch">Frokost</option><option value="breakfast">Morgenmad</option></select></div></div>'+
+ '<div class="panel"><h2>Planlæg aftensmad</h2><form id="meal-form">'+
+ '<div class="field"><label for="meal-date">Dato for aftensmad</label><input type="date" id="meal-date" required></div>'+ 
+ '<input id="meal-slot" type="hidden" value="dinner">'+
  '<div class="field"><label for="meal-recipe">Vælg opskrift (valgfrit)</label><select id="meal-recipe"><option value="">Ingen opskrift</option></select></div>'+
  '<div class="field"><label for="meal-title">Hvad skal I spise?</label><input id="meal-title" maxlength="120" required placeholder="Fx Kylling med ris"></div>'+
  '<div class="field"><label for="meal-note">Bemærkning</label><input id="meal-note" maxlength="350" placeholder="Fx rester fra i går"></div>'+
@@ -120,20 +119,17 @@ function weekLabel(){
  $("week-label").textContent=dateLabel(days[0])+" – "+dateLabel(days[6]);
 }
 function renderWeek(){
- weekLabel();const days=weekDays();
+ weekLabel();
+ const days=weekDays();
  $("meal-week").innerHTML=days.map(d=>{
-  const entries=meals.filter(x=>x.meal_date===d);
-  return '<div class="house-card"><h3>'+safe(dateLabel(d))+'</h3>'+
-   ["breakfast","lunch","dinner"].map(slot=>{
-    const m=entries.find(x=>x.meal_slot===slot);
-    return '<div class="meal-line"><div class="item-main"><span class="subtle small">'+slotLabel[slot]+'</span>'+
-      '<div class="item-title">'+(m?safe(m.title):'<span class="muted">Ikke planlagt</span>')+'</div>'+
-      (m?.note?'<div class="item-sub">'+safe(m.note)+'</div>':"")+'</div>'+
-      '<div class="item-actions"><button type="button" class="tiny-btn" data-meal-open="'+d+'|'+slot+'">'+(m?"Ret":"Tilføj")+'</button>'+
-      (m?'<button type="button" class="tiny-btn" data-meal-delete="'+m.id+'">Slet</button>':"")+'</div></div>';
-   }).join("")+'</div>';
+  const m=meals.find(x=>x.meal_date===d&&x.meal_slot==="dinner");
+  return '<div class="meal-dinner-day"><div class="meal-dinner-content"><span class="meal-dinner-date">'+safe(dateLabel(d))+'</span>'+
+   '<strong class="meal-dinner-name">'+(m?safe(m.title):'<span class="muted">Ikke planlagt</span>')+'</strong>'+
+   (m?.note?'<span class="item-sub">'+safe(m.note)+'</span>':"")+'</div>'+
+   '<div class="meal-dinner-actions"><button type="button" class="tiny-btn" data-meal-open="'+d+'|dinner">'+(m?"Ret":"Planlæg")+'</button>'+
+   (m?'<button type="button" class="tiny-btn" data-meal-delete="'+m.id+'">Slet</button>':"")+'</div></div>';
  }).join("");
- $("meal-groceries").disabled=!meals.some(x=>weekDays().includes(x.meal_date)&&x.recipe_id);
+ $("meal-groceries").disabled=!meals.some(x=>days.includes(x.meal_date)&&x.meal_slot==="dinner"&&x.recipe_id);
 }
 function recipeOptions(){
  const el=$("meal-recipe"),prior=el.value;
@@ -169,7 +165,7 @@ async function loadFood(force=false){
   const d=weekDays();
   const [r,m]=await Promise.all([
    api.client.from("family_recipes").select("*").eq("family_id",family.id).order("title").limit(350),
-   api.client.from("family_meal_plan").select("*").eq("family_id",family.id).gte("meal_date",d[0]).lte("meal_date",d[6]).order("meal_date").limit(100)
+   api.client.from("family_meal_plan").select("*").eq("family_id",family.id).eq("meal_slot","dinner").gte("meal_date",d[0]).lte("meal_date",d[6]).order("meal_date").limit(14)
   ]);
   if(r.error)throw r.error;if(m.error)throw m.error;
   if(ctx().family?.id!==family.id||weekDays()[0]!==requestedWeek)return;
@@ -195,8 +191,8 @@ async function saveRecipe(e){
 }
 async function saveMeal(e){
  e.preventDefault();const {family,user}=ctx();if(!family||!user)return;
- const meal_date=$("meal-date").value,meal_slot=$("meal-slot").value,title=$("meal-title").value.trim(),recipe_id=$("meal-recipe").value||null;
- if(!meal_date||!title||!Object.keys(slotLabel).includes(meal_slot)){notice("meal-notice","Udfyld dato, måltid og navn.",true);return;}
+ const meal_date=$("meal-date").value,meal_slot="dinner",title=$("meal-title").value.trim(),recipe_id=$("meal-recipe").value||null;
+ if(!meal_date||!title){notice("meal-notice","Udfyld dato, måltid og navn.",true);return;}
  $("meal-save").disabled=true;
  try{
   const {data:existing,error:findError}=await api.client.from("family_meal_plan")
@@ -213,8 +209,8 @@ async function saveMeal(e){
  }catch(err){notice("meal-notice","Kunne ikke gemme måltid: "+err.message,true);}finally{$("meal-save").disabled=false;}
 }
 function openMeal(date,slot){
- const m=meals.find(x=>x.meal_date===date&&x.meal_slot===slot);
- $("meal-date").value=date;$("meal-slot").value=slot;$("meal-recipe").value=m?.recipe_id||"";
+ const m=meals.find(x=>x.meal_date===date&&x.meal_slot==="dinner");
+ $("meal-date").value=date;$("meal-slot").value="dinner";$("meal-recipe").value=m?.recipe_id||"";
  $("meal-title").value=m?.title||"";$("meal-note").value=m?.note||"";
  $("meal-date").disabled=Boolean(m);$("meal-slot").disabled=Boolean(m);
  $("meal-save").textContent=m?"Gem ændringer":"Gem i madplan";
@@ -263,7 +259,7 @@ async function recipeToGro(id){
  catch(e){notice("recipe-notice","Kunne ikke tilføje ingredienser: "+e.message,true);}
 }
 async function weekToGro(){
- const planned=meals.filter(x=>weekDays().includes(x.meal_date)&&x.recipe_id);
+ const planned=meals.filter(x=>weekDays().includes(x.meal_date)&&x.meal_slot==="dinner"&&x.recipe_id);
  const ingredients=planned.flatMap(m=>(recipes.find(r=>r.id===m.recipe_id)?.ingredients||"").split(/\r?\n/));
  if(!ingredients.some(x=>x.trim())){notice("meal-notice","Ugens planlagte opskrifter har ingen ingredienser endnu.");return;}
  try{const added=await addIngredients(ingredients);notice("meal-notice",added+" ingredienser er tilføjet til indkøbslisten.");}
