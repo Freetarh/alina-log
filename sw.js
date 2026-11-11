@@ -1,6 +1,6 @@
 /* Cache for app shell only; private Supabase responses are never cached. */
-const CACHE='alina-cloud-shell-v14';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./family-dashboard.js','./family-dashboard.css','./google-calendar.js','./google-setup.html','./growth.js','./home.js','./household.js','./food.js','./household.css','./health.js','./health.css'];
+const CACHE='alina-cloud-shell-v15';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./family-dashboard.js','./family-dashboard.css','./google-calendar.js','./google-setup.html','./growth.js','./home.js','./household.js','./food.js','./household.css','./health.js','./health.css','./floral-theme.css','./art/bee-logo.svg','./art/meadow-header.svg','./art/flower-sprig.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x.startsWith('alina-cloud-shell-')&&x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
