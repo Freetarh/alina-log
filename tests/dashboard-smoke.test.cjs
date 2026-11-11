@@ -27,9 +27,14 @@ test('all static HTML IDs are unique and main routes exist',()=>{
  const html=load('index.html');
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);
  assert.equal(new Set(ids).size,ids.length,'duplicate HTML IDs');
- for(const view of ['hjem','overblik','vaegt','kalender','moduler','tilskud','rengoring','indkob','madplan']){
+ for(const view of ['hjem','overblik','vaegt','kalender','moduler','tilskud','rengoring','indkob','madplan','indstillinger']){
   assert.ok(ids.includes('view-'+view),'missing '+view);
- }
+   const settingsPos=html.indexOf('id="view-indstillinger"');
+  const accountPos=html.indexOf('id="cloud-account"');
+  assert.ok(accountPos>settingsPos,'Account details must be inside Settings, not above tabs');
+  assert.ok(html.includes('id="settings-shortcut"'),'Settings shortcut in header');
+  assert.ok(html.includes('id="copy-family-code"'),'Family-code copy preserved');
+  assert.ok(html.includes('id="logout-btn"'),'Logout preserved');
 });
 test('WHO girls reference curves match published LMS medians',()=>{
  const w={};vm.runInNewContext(load('growth.js'),{window:w,document:{getElementById:()=>null}});
@@ -45,9 +50,9 @@ function createFakeDOM(html){
  function get(id){
   if(elements.has(id))return elements.get(id);
   let source='';
-  const obj={id,value:'',checked:false,disabled:false,textContent:'',dataset:{},style:{},
+  const obj={id,value:'',checked:false,disabled:false,textContent:'',dataset:{},style:{},listeners:{},
    classList:{toggle(){},add(){},remove(){},contains(){return true}},
-   addEventListener(){},scrollIntoView(){},reset(){},querySelector(){return {disabled:false}},
+   addEventListener(type,fn){this.listeners[type]=fn;},scrollIntoView(){},reset(){},querySelector(){return {disabled:false}},
    get innerHTML(){return source},
    set innerHTML(next){source=String(next);for(const m of source.matchAll(/\bid="([^"]+)"/g))get(m[1]);}
   };
@@ -58,7 +63,7 @@ function createFakeDOM(html){
 }
 class MockQuery {
  constructor(table,storage){this.table=table;this.storage=storage;}
- select(){return this;}eq(){return this;}order(){return this;}gte(){return this;}lte(){return this;}lt(){return this;}limit(){return this;}
+ select(){return this;}eq(){return this;}order(){return this;}gte(){return this;}lte(){return this;}lt(){return this;}is(){return this;}limit(){return this;}
  maybeSingle(){return Promise.resolve({data:this.storage[this.table]?.[0]||null,error:null});}
  then(ok,bad){return Promise.resolve({data:this.storage[this.table]||[],error:null}).then(ok,bad);}
 }
@@ -73,13 +78,14 @@ test('new household views render from one family without throwing',async()=>{
   family_recipes:[{id:'r1',title:'Pasta',servings:2,prep_minutes:20,ingredients:'Pasta\nTomat',instructions:'Kog'}],
   family_meal_plan:[{id:'m1',meal_date:d,meal_slot:'dinner',title:'Pasta',recipe_id:'r1',note:''}],
   alina_growth_measures:[{id:'gr1',kind:'length',measured_on:d,value_mm:505,note:''}],
-  family_events:[{id:'e1',visibility:'family',show_on_family_calendar:true,starts_at:new Date().toISOString()}]
+  family_events:[{id:'e1',title:'Lægebesøg',visibility:'family',show_on_family_calendar:true,starts_at:new Date().toISOString()}]
  };
+ const quickActions=[],navigations=[];
  const cfg={client:{from:x=>new MockQuery(x,db)},getState:()=>({
   user:{id:'u1'},family:{id:'f1'},
   entries:[{kind:'weight',at:new Date().toISOString(),grams:3400},
    {kind:'weight',at:new Date(Date.now()-7*86400000).toISOString(),grams:3200}]
- }),go(){}};
+ }),go(route){navigations.push(route);},openEntry(kind){quickActions.push(kind);}};
  for(const f of ['growth.js','household.js','food.js','home.js'])vm.runInNewContext(load(f),{window:win,document,console,confirm:()=>true});
  for(const key of ['GrowthModule','HouseholdModule','FoodModule','HomeModule'])assert.doesNotThrow(()=>win[key].init(cfg));
  for(const [module,route] of [['GrowthModule','vaegt'],['HouseholdModule','tilskud'],['HouseholdModule','rengoring'],
@@ -92,5 +98,13 @@ test('new household views render from one family without throwing',async()=>{
  assert.match(get('recipe-list').innerHTML,/Pasta/);
  assert.match(get('meal-week').innerHTML,/Aftensmad/);
  assert.match(get('home-glance').innerHTML,/Dagens overblik/);
+ assert.match(get('home-glance').innerHTML,/Amning/);
+ assert.match(get('home-glance').innerHTML,/Aftensmad/);
+ const home=get('home-glance');
+ assert.equal(typeof home.listeners.click,'function','Home delegated action handler');
+ home.listeners.click({target:{closest(selector){return selector==='[data-home-kind]'?{dataset:{homeKind:'breast'}}:null;}}});
+ assert.deepEqual(quickActions,['breast'],'Quick nursing entry opens registration');
+ home.listeners.click({target:{closest(selector){return selector==='[data-home-go]'?{dataset:{homeGo:'kalender'}}:null;}}});
+ assert.deepEqual(navigations,['kalender'],'Calendar shortcut opens calendar');
  for(const key of ['GrowthModule','HouseholdModule','FoodModule','HomeModule'])assert.doesNotThrow(()=>win[key].reset());
 });
