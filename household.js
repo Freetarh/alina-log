@@ -231,6 +231,6 @@ function init(config){
 }
 function onView(v){active=v;if(v==="tilskud")void loadSupp(true);if(v==="rengoring")void loadChores(true);}
 function refresh(){if(active==="tilskud"&&$("view-tilskud").classList.contains("active"))void loadSupp();if(active==="rengoring"&&$("view-rengoring").classList.contains("active"))void loadChores();}
-function reset(){plans=[];doses=[];chores=[];history=[];members=[];choreEdit=null;showDone=false;last={tilskud:0,rengoring:0};active="";loading={tilskud:false,rengoring:false};if(api){rootSupp();rootChores();}}
+function reset(){plans=[];doses=[];chores=[];history=[];members=[];choreEdit=null;showDone=false;last={tilskud:0,rengoring:0};active="";loading={tilskud:false,rengoring:false};if(api){clearChore();renderSupp();renderChores();note("supplement-notice","");note("chore-notice","");}}
 window.HouseholdModule={init,onView,refresh,reset};
 })();
