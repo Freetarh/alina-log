@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Opsæt Google Kalender · Familiedashboard</title>
+<style>:root{font-family:system-ui,-apple-system,sans-serif;color:#17313c;background:#f2f6f5}body{max-width:640px;margin:0 auto;padding:20px 16px 90px;line-height:1.6}h1{font-size:1.8rem}h2{font-size:1.1rem;margin:22px 0 8px}p{margin:8px 0}a{color:#176e76}li{margin:8px 0}code{overflow-wrap:anywhere;background:#e9f0ef;padding:2px 4px;border-radius:5px}.panel{padding:18px;margin:14px 0;background:white;border:1px solid #dae5e3;border-radius:16px}.btn{display:inline-block;border:0;border-radius:12px;padding:12px 15px;background:#176e76;color:white;font:inherit;font-weight:650;text-decoration:none;cursor:pointer}textarea{width:100%;box-sizing:border-box;min-height:82px;padding:11px;border-radius:8px;border:1px solid #bacbc9;resize:vertical;margin:9px 0;font:14px monospace}.note{font-size:.88rem;color:#526974}.warn{background:#fff6e7;border-radius:9px;padding:12px;font-size:.87rem}strong{font-weight:700}</style></head>
+<body><a href="./">‹ Tilbage til dashboardet</a><h1>Tilslut Google Kalender</h1>
+<p>Dette er en engangsopsætning for familiedashboardets Google-forbindelse. Du kan udføre den fra telefonens browser, men Google Cloud er nemmest i browserens skrivebordsvisning.</p>
+<section class="panel"><h2>1. Opret Google-projekt</h2><ol>
+<li>Åbn <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>. Vælg eller opret et projekt til familiedashboardet.</li>
+<li>Gå til <a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" target="_blank" rel="noopener">Google Calendar API</a> og vælg <strong>Enable / Aktivér</strong>.</li>
+<li>Åbn <a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noopener">Google Auth Platform</a> og opsæt appens navn (fx Familiedashboard) og kontaktmail. Vælg External, hvis I bruger almindelige private Google-konti.</li>
+<li>I appens testbrugere skal du tilføje både din egen og Batouls Google-mailadresse. Hvis Google kræver valg af dataadgang, skal appen kunne se og redigere kalenderbegivenheder samt se kalenderlisten.</li>
+<li>Under <strong>Clients</strong> opretter du en <strong>OAuth client ID</strong> af typen <strong>Web application</strong>. Tilføj redirect-adressen nedenfor under <strong>Authorized redirect URIs</strong> (ikke som JavaScript origin).</li>
+</ol>
+<p>Google OAuth redirect URI:</p><textarea id="redirect" readonly>https://lsqasyswqwbggkzmsyvz.supabase.co/functions/v1/google-calendar/callback</textarea>
+<button class="btn" data-copy="redirect" type="button">Kopiér redirect-adressen</button>
+<p class="note">Gem Client ID og Client Secret fra Google Cloud. De skal ind i Supabase som hemmelige værdier, aldrig i GitHub eller almindelig app-kode.</p></section>
+<section class="panel"><h2>2. Supabase Edge Function Secrets</h2>
+<p>Åbn <a href="https://supabase.com/dashboard/project/lsqasyswqwbggkzmsyvz/settings/functions" target="_blank" rel="noopener">Supabase-projektets indstillinger for Edge Functions</a> og find <strong>Secrets</strong>.</p>
+<p>Opret følgende tre hemmelige værdier:</p>
+<ol><li><code>GOOGLE_CLIENT_ID</code> – Client ID fra Google Cloud</li>
+<li><code>GOOGLE_CLIENT_SECRET</code> – Client Secret fra Google Cloud</li>
+<li><code>GOOGLE_TOKEN_KEY</code> – krypteringsnøgle, som du genererer nedenfor</li></ol>
+<p>Generér en kryptografisk tilfældig 32-byte AES-nøgle direkte i din browser. Værdien bliver ikke sendt til vores server fra denne side.</p>
+<button id="generate" class="btn" type="button">Generér krypteringsnøgle</button>
+<textarea id="key" readonly placeholder="Tryk på knappen for at generere en nøgle"></textarea>
+<button id="copy-key" data-copy="key" class="btn" type="button">Kopiér krypteringsnøglen</button>
+<p class="warn"><strong>Vigtigt:</strong> Hvis nøglen ændres, kan eksisterende Google-forbindelser ikke længere dekrypteres. Gem derfor nøglen sikkert. Del ikke Client Secret eller krypteringsnøglen i chat eller GitHub.</p>
+<p>Hvis appen ligger på en anden adresse end <code>https://freetarh.github.io/alina-log/</code>, skal du også tilføje <code>GOOGLE_APP_RETURN_URL</code> med den faktiske HTTPS-adresse.</p></section>
+<section class="panel"><h2>3. Forbind konti og vælg fælles kalender</h2>
+<ol><li>Åbn familiedashboardet og log ind som dig selv. Gå til <strong>Kalender → Google Kalender → Forbind min Google-konto</strong>.</li>
+<li>Godkend Googles adgang. Gentag derefter på Batouls telefon med hendes familielogin og hendes egen Google-konto.</li>
+<li>Opret en ny, separat Google-kalender til fælles familieaftaler via Google Kalender (eksempelvis <strong>Familie</strong>), og del den med den anden person med skriverettigheder.</li>
+<li>I familiedashboardet vælger ejeren denne separate kalender under <strong>Fælles Google-kalender</strong>. Brug aldrig en privat primær kalender her.</li>
+<li>Tryk på <strong>Synkroniser fælles Google-kalender</strong>. Aftalerne vil derefter vises i familiens kalender.</li></ol>
+<a href="./" class="btn">Åbn familiedashboardet</a>
+</section>
+<p class="note">I Googles testtilstand udløber kalenderens refresh tokens normalt efter 7 dage. Det betyder, at Google-kontoerne muligvis skal forbindes igen, indtil Googles produktionskrav er opfyldt.</p>
+<script>
+const $=id=>document.getElementById(id);
+$('generate').addEventListener('click',()=>{const bytes=crypto.getRandomValues(new Uint8Array(32));$('key').value=btoa(String.fromCharCode(...bytes));});
+document.querySelectorAll('[data-copy]').forEach(button=>button.addEventListener('click',async()=>{const value=$(button.dataset.copy).value;if(!value)return;try{await navigator.clipboard.writeText(value);button.textContent='Kopieret';setTimeout(()=>button.textContent=button.dataset.copy==='key'?'Kopiér krypteringsnøglen':'Kopiér redirect-adressen',1600);}catch{ $(button.dataset.copy).focus();$(button.dataset.copy).select();}}));
+</script></body></html>
