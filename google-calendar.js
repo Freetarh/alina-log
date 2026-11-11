@@ -222,15 +222,23 @@ async function setShared(){
   await refreshStatus();await syncShared(true);notice('Den fælles Google-kalender er tilsluttet.');
  }catch(e){notice('Kunne ikke vælge fælles kalender: '+errorText(e),true);}
 }
+// Health visits can create shared events before the Calendar tab has been opened.
+async function ensureSharedStatus(){
+ if(status?.shared||!state().family)return;
+ status=await call('status');
+ connectedUI();
+}
 async function syncLocal(id){
- if(!status?.shared)return {synced:false};
  try{
+  await ensureSharedStatus();
+  if(!status?.shared)return {synced:false};
   return await call('push-family',{id});
  }catch(e){return {synced:false,error:errorText(e)};}
 }
 async function deleteLocal(id){
- if(!status?.shared)return {synced:false};
  try{
+  await ensureSharedStatus();
+  if(!status?.shared)return {synced:false};
   return await call('delete-family',{id});
  }catch(e){return {synced:false,error:errorText(e)};}
 }
