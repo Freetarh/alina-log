@@ -264,12 +264,32 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
   <div class="inner-links"><button type="button" class="btn soft" data-go="overblik">‹ Alinas log</button><button type="button" class="btn soft" data-go="historik">Historik</button></div>
   <div class="panel">
     <div class="sectionhead"><h2>Alinas vægtkurve</h2><div class="small-select"><label class="subtle small" for="weight-period">Periode</label><select id="weight-period"><option value="30">30 dage</option><option value="90" selected>90 dage</option><option value="all">Alle</option></select></div></div>
-    <p class="fineprint">Kurven viser kun vejninger, I selv har registreret. Den er ikke en WHO-vækstkurve og vurderer ikke trivsel eller vækst i forhold til normalområdet.</p>
+    <p class="fineprint">Alinas vejninger sammenholdes med WHO's vægt-for-alder-reference for piger (−2, −1, median, +1 og +2 standardafvigelser). Percentilerne er omtrentlige og bør vurderes sammen med udviklingen over tid og sundhedspersonalets målinger. <a href="https://www.who.int/tools/child-growth-standards/standards/weight-for-age" target="_blank" rel="noopener">Kilde: WHO</a>.</p>
     <div id="weight-summary" class="weight-stats" aria-live="polite"></div>
     <div id="weight-plot" class="plot-wrap" aria-live="polite"></div>
     <div class="row" style="margin-top:13px"><button type="button" class="btn primary" id="weight-register">Registrer ny vægt</button></div>
     <h3 style="margin-top:20px">Seneste vejninger</h3>
     <div id="weight-list" class="weight-lines"></div>
+  </div>
+  <div class="panel">
+    <div class="sectionhead"><h2>Længde og hovedomfang</h2><button type="button" id="growth-refresh" class="btn soft">Opdater</button></div>
+    <p class="fineprint">Registrér målinger fra sundhedsplejerske, læge eller hjemmefra. Denne kurve viser kun jeres egne målinger, ikke WHO-percentiler.</p>
+    <div class="field"><label for="growth-kind">Målingstype</label><select id="growth-kind"><option value="length">Længde</option><option value="head">Hovedomfang</option></select></div>
+    <h3 id="growth-chart-title">Længde over tid</h3>
+    <div id="growth-own-chart" class="plot-wrap"></div>
+    <div id="growth-measures-list" class="weight-lines"></div>
+  </div>
+  <div class="panel">
+    <h2>Registrér længde eller hovedomfang</h2>
+    <form id="growth-form">
+      <div class="form-grid">
+        <div class="field"><label for="growth-date">Dato</label><input id="growth-date" type="date" required></div>
+        <div class="field"><label for="growth-value">Måling (cm)</label><input id="growth-value" type="number" inputmode="decimal" min="25" max="125" step="0.1" required placeholder="Fx 49,5"></div>
+      </div>
+      <div class="field"><label for="growth-note">Bemærkning (valgfri)</label><input id="growth-note" maxlength="300" placeholder="Fx sundhedsplejerskens måling"></div>
+      <div class="row"><button type="submit" id="growth-save" class="btn primary">Gem måling</button><button type="button" id="growth-cancel" class="btn hidden">Annuller</button></div>
+      <p id="growth-notice" class="section-notice" role="status"></p>
+    </form>
   </div>
 </section>
 <section class="view" id="view-kalender" aria-label="Familiekalender">
@@ -363,15 +383,31 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 </section>
 <section class="view" id="view-moduler" aria-label="Flere familiemoduler">
   <div class="panel">
-    <h2>Flere moduler</h2>
-    <p class="subtle small">Disse områder er placeholders, indtil vi bygger dem. De bestemmer ikke den endelige forside.</p>
+    <h2>Familiens moduler</h2>
+    <p class="subtle small">Alle moduler bruger jeres fælles familielogin. Forsiden fastlægger vi til sidst.</p>
     <div class="module-grid">
-      <div class="module-tile"><strong>D-dråber og jern</strong><span>Plan, registrering og påmindelser – kommer senere</span></div>
-      <div class="module-tile"><strong>Rengøringsplan</strong><span>Gentagne opgaver og ansvar – kommer senere</span></div>
-      <div class="module-tile"><strong>Indkøbsliste</strong><span>Fælles indkøb – kommer senere</span></div>
-      <div class="module-tile"><strong>Madplan & opskrifter</strong><span>Ugeplan og ingredienser – kommer senere</span></div>
+      <button type="button" class="module-tile" data-go="tilskud"><strong>D-dråber og jern</strong><span>Plan, daglig registrering og historik</span></button>
+      <button type="button" class="module-tile" data-go="rengoring"><strong>Rengøringsplan</strong><span>Opgaver, gentagelser og overblik</span></button>
+      <button type="button" class="module-tile" data-go="indkob"><strong>Indkøbsliste</strong><span>Fælles liste og afkrydsning</span></button>
+      <button type="button" class="module-tile" data-go="madplan"><strong>Madplan og opskrifter</strong><span>Ugeplan, opskrifter og indkøb</span></button>
     </div>
   </div>
+</section>
+<section class="view" id="view-tilskud" aria-label="D-dråber og jerntilskud">
+  <div class="inner-links"><button type="button" class="btn soft" data-go="moduler">‹ Moduler</button><button type="button" class="btn soft" data-go="overblik">Alinas log</button></div>
+  <div id="supplement-module"></div>
+</section>
+<section class="view" id="view-rengoring" aria-label="Rengøringsplan">
+  <div class="inner-links"><button type="button" class="btn soft" data-go="moduler">‹ Moduler</button></div>
+  <div id="chores-module"></div>
+</section>
+<section class="view" id="view-indkob" aria-label="Indkøbsliste">
+  <div class="inner-links"><button type="button" class="btn soft" data-go="moduler">‹ Moduler</button><button type="button" class="btn soft" data-go="madplan">Madplan</button></div>
+  <div id="grocery-module"></div>
+</section>
+<section class="view" id="view-madplan" aria-label="Madplan og opskrifter">
+  <div class="inner-links"><button type="button" class="btn soft" data-go="moduler">‹ Moduler</button><button type="button" class="btn soft" data-go="indkob">Indkøbsliste</button></div>
+  <div id="food-module"></div>
 </section>
 </main>
 <footer>Familiedashboard · Privat familielog · Synkroniseres via Supabase</footer>
@@ -386,6 +422,9 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0"></script>
 <script src="./family-dashboard.js"></script>
+<script src="./growth.js"></script>
+<script src="./household.js"></script>
+<script src="./food.js"></script>
 <script src="./google-calendar.js"></script>
 <script>
 (function () {
@@ -435,14 +474,20 @@ function validEntry(e){
 }
 function view(view){
  document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id==='view-'+view));
- const navGroup=['registrer','beregner','historik','vaegt'].includes(view)?'overblik':view;
+ const navGroup=['registrer','beregner','historik','vaegt'].includes(view)?'overblik':['tilskud','rengoring','indkob','madplan'].includes(view)?'moduler':view;
  document.querySelectorAll('#main-nav button').forEach(el=>{const selected=el.dataset.go===navGroup;el.classList.toggle('active',selected);selected?el.setAttribute('aria-current','page'):el.removeAttribute('aria-current')});
  window.FamilyDashboard?.onView(view);
+ window.GrowthModule?.onView(view);
+ window.HouseholdModule?.onView(view);
+ window.FoodModule?.onView(view);
  if(view==='kalender')window.GoogleCalendarModule?.onCalendarView();
  window.scrollTo({top:0,behavior:'instant'});
 }
 function showGate(mode){
  window.FamilyDashboard?.reset();
+ window.GrowthModule?.reset();
+ window.HouseholdModule?.reset();
+ window.FoodModule?.reset();
  window.GoogleCalendarModule?.reset();
  activeTimers={breast:null,bottle:null};tickTimers();
  $('cloud-gate').classList.remove('hidden');$('app-main').classList.add('hidden');$('main-nav').classList.add('hidden');$('cloud-account').classList.add('hidden');
@@ -577,7 +622,7 @@ async function refreshData(){
     const r=await supabaseClient.from('alina_entries').select('*').eq('family_id',family.id).order('at',{ascending:false}).range(first,first+999);
     if(r.error)throw r.error;collected.push(...r.data);if(r.data.length<1000)break;
   }
-  entries=collected.map(dbToLocal);await refreshTimers();render();window.FamilyDashboard?.refresh();
+  entries=collected.map(dbToLocal);await refreshTimers();render();window.FamilyDashboard?.refresh();window.HouseholdModule?.refresh();window.FoodModule?.refresh();
   $('sync-status').textContent='Senest opdateret '+humanClock(new Date());
  }catch(e){$('sync-status').textContent='Kunne ikke synkronisere';warn('Kunne ikke hente fælles data: '+errText(e),'account-notice')}
  finally{refreshing=false}
@@ -700,6 +745,9 @@ async function importJSON(ev){
  finally{$('import-json').disabled=false;await refreshData()}
 }
 window.FamilyDashboard?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view});
+ window.GrowthModule?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view});
+ window.HouseholdModule?.init({client:supabaseClient,getState:()=>({user,family}),go:view});
+ window.FoodModule?.init({client:supabaseClient,getState:()=>({user,family}),go:view});
  window.GoogleCalendarModule?.init({client:supabaseClient,getState:()=>({user,family}),reloadCalendar:()=>window.FamilyDashboard?.refresh()});
 $('history-date').value=localDay(new Date());resetForm();render();showGate('auth');
 setInterval(tickTimers,1000);
