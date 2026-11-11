@@ -7,8 +7,8 @@ const path=require('node:path');
 const vm=require('node:vm');
 const root=path.resolve(__dirname,'..');
 const load=p=>fs.readFileSync(path.join(root,p),'utf8');
-const scripts=['family-dashboard.js','google-calendar.js','growth.js','home.js','household.js','food.js'];
-const assets=['index.html','manifest.webmanifest','sw.js','family-dashboard.css','household.css','google-setup.html',...scripts];
+const scripts=['family-dashboard.js','google-calendar.js','growth.js','home.js','household.js','food.js','health.js'];
+const assets=['index.html','manifest.webmanifest','sw.js','family-dashboard.css','household.css','health.css','google-setup.html',...scripts];
 
 test('all necessary static assets exist and JavaScript parses',()=>{
  for(const file of assets)assert.ok(fs.existsSync(path.join(root,file)),file);
@@ -27,7 +27,7 @@ test('all static HTML IDs are unique and main routes exist',()=>{
  const html=load('index.html');
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);
  assert.equal(new Set(ids).size,ids.length,'duplicate HTML IDs');
- for(const view of ['hjem','overblik','vaegt','kalender','moduler','tilskud','rengoring','indkob','madplan','indstillinger']){
+ for(const view of ['hjem','overblik','vaegt','kalender','moduler','tilskud','rengoring','indkob','madplan','sundhed','indstillinger']){
   assert.ok(ids.includes('view-'+view),'missing '+view);
  }
    const settingsPos=html.indexOf('id="view-indstillinger"');
@@ -77,6 +77,24 @@ test('dinner planner has one slot and keeps other historical meals untouched',()
  assert.ok(!code.includes('from("family_meal_plan").delete().neq'),'No deletion of old meal types');
 });
 
+
+test('health calendar standard milestones never become invented bookings',()=>{
+ const win={};
+ vm.runInNewContext(load('health.js'),{window:win,document:{getElementById:()=>null}});
+ const api=win.HealthModule,visits=api.aggregate([]);
+ const lookup=key=>visits.find(x=>x.milestone_key===key);
+ assert.equal(api.standards.length,11);
+ assert.equal(lookup('exam-5w').expected_on,'2026-11-10');
+ assert.equal(lookup('vax-3m').expected_on,'2027-01-06');
+ assert.equal(lookup('exam-vax-5m').expected_on,'2027-03-06');
+ assert.equal(lookup('exam-vax-12m').expected_on,'2027-10-06');
+ assert.equal(lookup('mfr-15m').expected_on,'2028-01-06');
+ assert.equal(lookup('exam-2y').expected_on,'2028-10-06');
+ assert.equal(lookup('hpv-12y-1').expected_on,'2038-10-06');
+ assert.equal(lookup('hpv-12y-2').expected_on,'2039-04-06');
+ assert.ok(visits.every(x=>!x.booked_start&&!x.completed_on),'Recommendations cannot be actual bookings');
+});
+
 test('WHO girls reference curves match published LMS medians',()=>{
  const w={};vm.runInNewContext(load('growth.js'),{window:w,document:{getElementById:()=>null}});
  const {ref,cdf,zscore}=w.GrowthModule.reference;
@@ -93,7 +111,7 @@ function createFakeDOM(html){
   let source='';
   const obj={id,value:'',checked:false,disabled:false,textContent:'',dataset:{},style:{},listeners:{},
    classList:{toggle(){},add(){},remove(){},contains(){return true}},
-   addEventListener(type,fn){this.listeners[type]=fn;},scrollIntoView(){},reset(){},querySelector(){return {disabled:false}},
+   addEventListener(type,fn){this.listeners[type]=fn;},scrollIntoView(){},reset(){},querySelector(){return {disabled:false}},querySelectorAll(){return [];},setAttribute(){},
    get innerHTML(){return source},
    set innerHTML(next){source=String(next);for(const m of source.matchAll(/\bid="([^"]+)"/g))get(m[1]);}
   };
@@ -114,7 +132,7 @@ test('new household views render from one family without throwing',async()=>{
  const db={
   family_supplements:[{id:'s1',code:'vitamin_d',title:'D-dråber',dose_instructions:'',daily_goal:null,schedule_time:null,active:true},
    {id:'s2',code:'iron',title:'Jern',dose_instructions:'',daily_goal:null,schedule_time:null,active:true}],
-  family_supplement_doses:[],family_chores:[{id:'c1',title:'Badeværelse',repeat_days:7,due_on:d,responsible:'Begge',completed:false,details:''}],
+  family_health_visits:[],family_supplement_doses:[],family_chores:[{id:'c1',title:'Badeværelse',repeat_days:7,due_on:d,responsible:'Begge',completed:false,details:''}],
   family_chore_history:[],family_groceries:[{id:'g1',name:'Mælk',amount:'1 liter',category:'Køl og mejeri',checked:false,created_at:new Date().toISOString()}],
   family_recipes:[{id:'r1',title:'Pasta',servings:2,prep_minutes:20,ingredients:'Pasta\nTomat',instructions:'Kog'}],
   family_meal_plan:[{id:'m1',meal_date:d,meal_slot:'dinner',title:'Pasta',recipe_id:'r1',note:''}],
@@ -127,10 +145,10 @@ test('new household views render from one family without throwing',async()=>{
   entries:[{kind:'weight',at:new Date().toISOString(),grams:3400},
    {kind:'weight',at:new Date(Date.now()-7*86400000).toISOString(),grams:3200}]
  }),go(route){navigations.push(route);},openEntry(kind){quickActions.push(kind);},openEvent(){newEvents.push('new');}};
- for(const f of ['growth.js','household.js','food.js','home.js'])vm.runInNewContext(load(f),{window:win,document,console,confirm:()=>true});
- for(const key of ['GrowthModule','HouseholdModule','FoodModule','HomeModule'])assert.doesNotThrow(()=>win[key].init(cfg));
+ for(const f of ['growth.js','household.js','food.js','home.js','health.js'])vm.runInNewContext(load(f),{window:win,document,console,confirm:()=>true});
+ for(const key of ['GrowthModule','HouseholdModule','FoodModule','HomeModule','HealthModule'])assert.doesNotThrow(()=>win[key].init(cfg));
  for(const [module,route] of [['GrowthModule','vaegt'],['HouseholdModule','tilskud'],['HouseholdModule','rengoring'],
-  ['FoodModule','indkob'],['FoodModule','madplan'],['HomeModule','hjem']])assert.doesNotThrow(()=>win[module].onView(route));
+  ['FoodModule','indkob'],['FoodModule','madplan'],['HealthModule','sundhed'],['HomeModule','hjem']])assert.doesNotThrow(()=>win[module].onView(route));
  for(let i=0;i<20;i++)await Promise.resolve();
  assert.match(get('weight-plot').innerHTML,/<svg/);
  assert.match(get('supplement-list').innerHTML,/D-dråber/);
@@ -139,6 +157,7 @@ test('new household views render from one family without throwing',async()=>{
  assert.match(get('recipe-list').innerHTML,/Pasta/);
  assert.match(get('meal-week').innerHTML,/Pasta/);
  assert.ok(!get('meal-week').innerHTML.includes('Morgenmad')&&!get('meal-week').innerHTML.includes('Frokost'),'Dinner-only view does not show other meals');
+ assert.match(get('health-list').innerHTML,/3-måneders vaccination/);
  assert.match(get('home-glance').innerHTML,/Dagens overblik/);
  assert.match(get('home-glance').innerHTML,/Amning/);
  assert.match(get('home-glance').innerHTML,/Aftensmad/);
