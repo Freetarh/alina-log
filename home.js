@@ -9,7 +9,7 @@ const dateLabel=d=>d.toLocaleDateString("da-DK",{weekday:"long",day:"numeric",mo
 const weekdays=(d)=>d.toLocaleDateString("da-DK",{weekday:"long"});
 const humanAge=()=>{
  const today=new Date(),age=Math.max(0,Math.round((Date.UTC(today.getFullYear(),today.getMonth(),today.getDate())-Date.UTC(2026,9,6))/86400000));
- return age<7?age+" dage":Math.floor(age/7)+" uger og "+(age%7)+" dage";
+ const remainder=age%7;return age<7?age+" "+(age===1?"dag":"dage"):Math.floor(age/7)+" "+(Math.floor(age/7)===1?"uge":"uger")+" og "+remainder+" "+(remainder===1?"dag":"dage");
 };
 let api=null,last=0,loading=false,epoch=0,data=null,status="";
 const ctx=()=>api?.getState()||{};
