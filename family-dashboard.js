@@ -41,7 +41,7 @@ function renderWeights(){
 function clearCalendarForm(){
  eventEditing=null;byId('calendar-form').reset();byId('calendar-form-heading').textContent='Ny aftale';
  byId('calendar-submit').textContent='Gem aftale';byId('calendar-cancel').classList.add('hidden');
- byId('event-kind').value='appointment';byId('event-visibility').value='family';byId('event-family-visible').checked=true;
+ byId('event-kind').value='appointment';byId('event-visibility').value='family';byId('event-visibility').querySelector('option[value="private"]').disabled=false;byId('event-family-visible').checked=true;
  const chosen=byId('calendar-day').value||day(new Date()),now=new Date(),begin=new Date(chosen+'T'+(chosen===day(now)?String(now.getHours()).padStart(2,'0'):'09')+':00:00');
  byId('event-start').value=dateTime(begin);byId('event-end').value=dateTime(new Date(begin.getTime()+3600000));
  byId('calendar-form-notice').textContent='';
@@ -62,7 +62,7 @@ function renderCalendar(){
  if(!visible.length){target.innerHTML='<div class="empty">Ingen synlige aftaler denne dag. Du kan vælge at vise skjulte eller private aftaler ovenfor.</div>';return;}
  const currentUser=context().user?.id;
  target.innerHTML=visible.map(e=>{
-  const start=new Date(e.starts_at),end=new Date(e.ends_at),owner=e.created_by===currentUser;
+  const start=new Date(e.starts_at),end=new Date(e.ends_at),owner=e.created_by===currentUser||e.visibility==='family';
   const tags=(e.visibility==='private'?'<span class="pill-tag">Privat</span>':(!e.show_on_family_calendar?'<span class="pill-tag">Skjult fra overblik</span>':'<span class="pill-tag">Fælles</span>'));
   const type={appointment:'Aftale',reminder:'Påmindelse',medication:'Medicin / tilskud'}[e.kind]||'Aftale';
   return '<div class="calendar-item"><div class="calendar-body"><div class="calendar-title">'+esc(e.title)+'</div><div class="calendar-meta">'+(e.google_all_day?'Hele dagen':esc(formatTime(start))+'–'+esc(formatTime(end)))+' · '+type+'</div>'+
@@ -96,7 +96,7 @@ async function saveCalendar(e){
  };
  try{
   let query;
-  if(eventEditing)query=api.client.from('family_events').update(row).eq('id',eventEditing).eq('family_id',family.id).eq('created_by',user.id).select('id');
+  if(eventEditing)query=api.client.from('family_events').update(row).eq('id',eventEditing).eq('family_id',family.id).select('id');
   else query=api.client.from('family_events').insert({...row,created_by:user.id}).select('id');
   const {data,error}=await query;if(error)throw error;if(!data?.length)throw new Error('Aftalen blev ikke gemt. Kontrollér adgang.');
   const googleSync=row.visibility==='family'&&row.show_on_family_calendar ?
@@ -112,12 +112,12 @@ function handleCalendarList(e){
  const edit=e.target.closest('[data-event-edit]'),del=e.target.closest('[data-event-delete]');
  if(!edit&&!del)return;
  const id=edit?.dataset.eventEdit||del?.dataset.eventDelete;
- const event=calendarEvents.find(x=>x.id===id);if(!event||event.created_by!==context().user?.id)return;
+ const event=calendarEvents.find(x=>x.id===id);if(!event||(event.created_by!==context().user?.id&&event.visibility!=='family'))return;
  if(edit){
   eventEditing=id;byId('calendar-form-heading').textContent='Ret aftale';byId('calendar-submit').textContent='Gem ændringer';byId('calendar-cancel').classList.remove('hidden');
   byId('event-title').value=event.title;byId('event-start').value=dateTime(new Date(event.starts_at));byId('event-end').value=dateTime(new Date(event.ends_at));
   byId('event-kind').value=event.kind;byId('event-details').value=event.details||'';byId('event-visibility').value=event.visibility;
-  byId('event-family-visible').checked=event.show_on_family_calendar;byId('calendar-form-notice').textContent='';
+  byId('event-family-visible').checked=event.show_on_family_calendar;byId('event-visibility').querySelector('option[value="private"]').disabled=event.created_by!==context().user?.id;byId('calendar-form-notice').textContent='';
   byId('calendar-form').scrollIntoView({behavior:'smooth',block:'start'});return;
  }
  if(!confirm('Slet aftalen "'+event.title+'"'+(event.google_event_id?' både i dashboardet og på den fælles Google-kalender':'')+'?'))return;
@@ -127,7 +127,7 @@ function handleCalendarList(e){
     const result=await window.GoogleCalendarModule?.deleteLocal(id);
     if(!result?.synced)throw new Error(result?.error||'Kan ikke slette Google-kopien, før forbindelsen til den fælles Google-kalender er aktiv.');
    }
-   const {error}=await api.client.from('family_events').delete().eq('id',id).eq('family_id',context().family.id).eq('created_by',context().user.id);
+   const {error}=await api.client.from('family_events').delete().eq('id',id).eq('family_id',context().family.id);
    if(error)throw error;
    await refreshCalendar();
   }catch(error){byId('calendar-status').textContent='Kunne ikke slette: '+(error.message||String(error));}
