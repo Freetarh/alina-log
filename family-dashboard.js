@@ -117,7 +117,7 @@ function handleCalendarList(e){
   eventEditing=id;byId('calendar-form-heading').textContent='Ret aftale';byId('calendar-submit').textContent='Gem ændringer';byId('calendar-cancel').classList.remove('hidden');
   byId('event-title').value=event.title;byId('event-start').value=dateTime(new Date(event.starts_at));byId('event-end').value=dateTime(new Date(event.ends_at));
   byId('event-kind').value=event.kind;byId('event-details').value=event.details||'';byId('event-visibility').value=event.visibility;
-  byId('event-family-visible').checked=event.show_on_family_calendar;byId('event-visibility').querySelector('option[value="private"]').disabled=event.created_by!==context().user?.id;byId('calendar-form-notice').textContent='';
+  byId('event-family-visible').checked=event.show_on_family_calendar;byId('event-visibility').querySelector('option[value="private"]').disabled=event.created_by!==context().user?.id||Boolean(event.google_event_id);byId('calendar-form-notice').textContent='';
   byId('calendar-form').scrollIntoView({behavior:'smooth',block:'start'});return;
  }
  if(!confirm('Slet aftalen "'+event.title+'"'+(event.google_event_id?' både i dashboardet og på den fælles Google-kalender':'')+'?'))return;
