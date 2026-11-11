@@ -137,7 +137,8 @@ test('new household views render from one family without throwing',async()=>{
  assert.match(get('chore-list').innerHTML,/Badeværelse/);
  assert.match(get('gro-list').innerHTML,/Mælk/);
  assert.match(get('recipe-list').innerHTML,/Pasta/);
- assert.match(get('meal-week').innerHTML,/Aftensmad/);
+ assert.match(get('meal-week').innerHTML,/Pasta/);
+ assert.ok(!get('meal-week').innerHTML.includes('Morgenmad')&&!get('meal-week').innerHTML.includes('Frokost'),'Dinner-only view does not show other meals');
  assert.match(get('home-glance').innerHTML,/Dagens overblik/);
  assert.match(get('home-glance').innerHTML,/Amning/);
  assert.match(get('home-glance').innerHTML,/Aftensmad/);
