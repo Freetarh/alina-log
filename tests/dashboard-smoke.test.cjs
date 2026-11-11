@@ -80,12 +80,12 @@ test('new household views render from one family without throwing',async()=>{
   alina_growth_measures:[{id:'gr1',kind:'length',measured_on:d,value_mm:505,note:''}],
   family_events:[{id:'e1',title:'Lægebesøg',visibility:'family',show_on_family_calendar:true,starts_at:new Date().toISOString()}]
  };
- const quickActions=[],navigations=[];
+ const quickActions=[],navigations=[],newEvents=[];
  const cfg={client:{from:x=>new MockQuery(x,db)},getState:()=>({
   user:{id:'u1'},family:{id:'f1'},
   entries:[{kind:'weight',at:new Date().toISOString(),grams:3400},
    {kind:'weight',at:new Date(Date.now()-7*86400000).toISOString(),grams:3200}]
- }),go(route){navigations.push(route);},openEntry(kind){quickActions.push(kind);}};
+ }),go(route){navigations.push(route);},openEntry(kind){quickActions.push(kind);},openEvent(){newEvents.push('new');}};
  for(const f of ['growth.js','household.js','food.js','home.js'])vm.runInNewContext(load(f),{window:win,document,console,confirm:()=>true});
  for(const key of ['GrowthModule','HouseholdModule','FoodModule','HomeModule'])assert.doesNotThrow(()=>win[key].init(cfg));
  for(const [module,route] of [['GrowthModule','vaegt'],['HouseholdModule','tilskud'],['HouseholdModule','rengoring'],
@@ -106,5 +106,7 @@ test('new household views render from one family without throwing',async()=>{
  assert.deepEqual(quickActions,['breast'],'Quick nursing entry opens registration');
  home.listeners.click({target:{closest(selector){return selector==='[data-home-go]'?{dataset:{homeGo:'kalender'}}:null;}}});
  assert.deepEqual(navigations,['kalender'],'Calendar shortcut opens calendar');
+ home.listeners.click({target:{closest(selector){return selector==='[data-home-new-event]'?{}:null;}}});
+ assert.deepEqual(newEvents,['new'],'Quick new appointment launches its form');
  for(const key of ['GrowthModule','HouseholdModule','FoodModule','HomeModule'])assert.doesNotThrow(()=>win[key].reset());
 });
