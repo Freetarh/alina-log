@@ -55,7 +55,7 @@ function renderCalendar(){
  const dayValue=byId('calendar-day').value||day(new Date());
  const showHidden=byId('calendar-show-hidden').checked;
  const showPrivate=byId('calendar-show-private').checked;
- const candidates=calendarEvents.filter(e=>day(new Date(e.starts_at))===dayValue);
+ const candidates=calendarEvents.filter(e=>!e.google_removed_at&&day(new Date(e.starts_at))===dayValue);
  const visible=candidates.filter(e=>e.visibility==='private'?showPrivate:(e.show_on_family_calendar||showHidden));
  const target=byId('calendar-list');if(!target)return;
  byId('calendar-count').textContent=visible.length+' vises'+(candidates.length>visible.length?' · '+(candidates.length-visible.length)+' skjult':'');
@@ -74,7 +74,7 @@ async function refreshCalendar(){
  const {family}=context();if(!family||!api||loadingEvents)return;
  loadingEvents=true;
  try {
-  const {data,error}=await api.client.from('family_events').select('id,family_id,created_by,title,details,starts_at,ends_at,kind,visibility,show_on_family_calendar,google_event_id,google_calendar_id,google_dirty,google_all_day').eq('family_id',family.id).order('starts_at',{ascending:true}).limit(2000);
+  const {data,error}=await api.client.from('family_events').select('id,family_id,created_by,title,details,starts_at,ends_at,kind,visibility,show_on_family_calendar,google_event_id,google_calendar_id,google_dirty,google_all_day,google_removed_at').eq('family_id',family.id).order('starts_at',{ascending:true}).limit(2000);
   if(error)throw error;
   if(context().family?.id!==family.id)return;
   calendarEvents=data||[];renderCalendar();
