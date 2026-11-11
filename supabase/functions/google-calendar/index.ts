@@ -145,7 +145,12 @@ async function familyPersonalEvents(user,chosenDay) {
        .select("event_id").eq("user_id",owner.user_id).eq("calendar_id",owner.calendar_id).limit(2000);
      if(hideErr)throw hideErr;
      const hidden=new Set((excluded||[]).map(e=>e.event_id));
-     results.push(...events.filter(e=>!hidden.has(e.id)&&e.google_visibility!=="private").map(e=>({
+     const {data:filters,error:filterError}=await admin.from("google_calendar_filters")
+       .select("hidden_keywords").eq("user_id",owner.user_id).eq("calendar_id",owner.calendar_id).maybeSingle();
+     if(filterError)throw filterError;
+     const keywords=(filters?.hidden_keywords||[]).map(x=>String(x).trim().toLowerCase()).filter(Boolean);
+     results.push(...events.filter(e=>!hidden.has(e.id)&&e.google_visibility!=="private"&&
+       !keywords.some(word=>e.summary.toLowerCase().includes(word))).map(e=>({
        id:e.id,summary:e.summary,starts_at:e.starts_at,ends_at:e.ends_at,
        all_day:e.all_day,source_user_id:owner.user_id
      })));
