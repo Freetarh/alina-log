@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="./icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="description" content="Alinas mælke- og hverdagslog. Registrer flasker, amning, bleer og vægt – og beregn mælkemål. Forudsætter internet ved registrering.">
-<title>Alina · Mælk & log</title>
+<title>Familiens dashboard · Alina</title>
 <style>
 :root{color-scheme:light;--bg:#f2f6f5;--paper:#fff;--ink:#172f3b;--muted:#677985;--teal:#176e76;--dark:#173d48;--tealLight:#e6f4f1;--edge:#dae5e3;--orange:#9b682e;--warn:#fff5e7;--danger:#a94343;--shadow:0 8px 26px rgba(16,47,54,.055)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;min-height:100vh}
@@ -48,11 +48,12 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 @media(max-width:380px){.shell{padding-left:11px;padding-right:11px}.panel{padding:15px}.item{padding:10px}.item-actions{flex-direction:column}.form-grid{gap:0 8px}.quick{gap:6px}.quick button{font-size:.72rem}}
 @media print{.nav,.quick,.tabs,.btn,.item-actions{display:none!important}.view{display:block!important}.shell{padding:0}.panel{box-shadow:none;page-break-inside:avoid}}
 </style>
+<link rel="stylesheet" href="./family-dashboard.css">
 </head>
 <body>
 <div class="shell">
 <header class="masthead">
-  <div><div class="eyebrow">Alinas hverdag</div><h1>Mælk & log</h1><p class="subtle tight">Mælkeberegner, flasker, amning og bleer samlet ét sted.</p></div>
+  <div><div class="eyebrow">Vores familie</div><h1>Familiedashboard</h1><p class="subtle tight">Alinas log, kalender og familiens moduler.</p></div>
   <div class="chip">Fælles log</div>
 </header>
 <section id="cloud-gate" class="panel">
@@ -86,7 +87,26 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
 </div>
 
 <main id="app-main" class="hidden">
-<section class="view active" id="view-overblik" aria-label="Overblik">
+<section class="view active" id="view-hjem" aria-label="Hjem">
+  <div class="panel">
+    <span class="module-label">Midlertidig forside</span>
+    <h2 style="margin-top:9px">Her samler vi familiens overblik</h2>
+    <p class="module-intro subtle">Vi fastlægger først forsiden, når modulerne er på plads. Indtil videre er dette kun genveje.</p>
+    <div class="module-grid">
+      <button type="button" class="module-tile" data-go="overblik"><strong>Alinas log</strong><span>Mad, amning, flasker, bleer og timere</span></button>
+      <button type="button" class="module-tile" data-go="kalender"><strong>Familiekalender</strong><span>Aftaler, private påmindelser og filtre</span></button>
+      <button type="button" class="module-tile" data-go="vaegt"><strong>Vægtkurve</strong><span>Alinas registrerede vejninger</span></button>
+      <button type="button" class="module-tile" data-go="moduler"><strong>Øvrige moduler</strong><span>Tilskud, rengøring, indkøb og madplan</span></button>
+    </div>
+  </div>
+</section>
+<section class="view" id="view-overblik" aria-label="Alinas log">
+  <div class="inner-links">
+    <button class="btn soft" type="button" data-go="registrer">Registrer</button>
+    <button class="btn soft" type="button" data-go="beregner">Mælkeberegner</button>
+    <button class="btn soft" type="button" data-go="vaegt">Vægtkurve</button>
+    <button class="btn soft" type="button" data-go="historik">Historik</button>
+  </div>
   <div class="panel hero">
     <div class="sectionhead"><h2>Seneste 24 timer</h2><span class="small">Opmålte mængder</span></div>
     <div class="stats">
@@ -239,18 +259,84 @@ footer{text-align:center;font-size:.76rem;color:var(--muted);padding:19px 12px;l
     <p class="fineprint">Indlæsning tilføjer registreringer fra sikkerhedskopien til familiens fælles log. Dubletter med samme indhold springes over.</p>
   </div>
 </section>
+
+<section class="view" id="view-vaegt" aria-label="Alinas vægtkurve">
+  <div class="inner-links"><button type="button" class="btn soft" data-go="overblik">‹ Alinas log</button><button type="button" class="btn soft" data-go="historik">Historik</button></div>
+  <div class="panel">
+    <div class="sectionhead"><h2>Alinas vægtkurve</h2><div class="small-select"><label class="subtle small" for="weight-period">Periode</label><select id="weight-period"><option value="30">30 dage</option><option value="90" selected>90 dage</option><option value="all">Alle</option></select></div></div>
+    <p class="fineprint">Kurven viser kun vejninger, I selv har registreret. Den er ikke en WHO-vækstkurve og vurderer ikke trivsel eller vækst i forhold til normalområdet.</p>
+    <div id="weight-summary" class="weight-stats" aria-live="polite"></div>
+    <div id="weight-plot" class="plot-wrap" aria-live="polite"></div>
+    <div class="row" style="margin-top:13px"><button type="button" class="btn primary" id="weight-register">Registrer ny vægt</button></div>
+    <h3 style="margin-top:20px">Seneste vejninger</h3>
+    <div id="weight-list" class="weight-lines"></div>
+  </div>
+</section>
+<section class="view" id="view-kalender" aria-label="Familiekalender">
+  <div class="panel">
+    <div class="sectionhead"><h2>Familiekalender</h2><button type="button" class="btn soft" id="calendar-refresh">Opdater</button></div>
+    <p class="fineprint">Kalenderen gemmes hos jer i Supabase. Google Kalender-forbindelsen kommer i en senere udviklingsfase.</p>
+    <div class="calendar-date-row">
+      <button type="button" class="btn" id="calendar-prev" aria-label="Forrige dag">‹</button>
+      <input type="date" id="calendar-day" aria-label="Vælg kalenderdag">
+      <button type="button" class="btn" id="calendar-next" aria-label="Næste dag">›</button>
+      <button type="button" class="btn soft" id="calendar-today">I dag</button>
+    </div>
+    <div class="calendar-filter">
+      <label><input id="calendar-show-hidden" type="checkbox"> Vis skjulte aftaler</label>
+      <label><input id="calendar-show-private" type="checkbox"> Vis mine private</label>
+    </div>
+    <div class="row split"><strong class="small">Dagens aftaler</strong><span class="subtle small" id="calendar-count">0 vises</span></div>
+    <div class="calendar-list" id="calendar-list"></div>
+    <p class="section-notice" id="calendar-status" role="status"></p>
+  </div>
+  <div class="panel">
+    <h2 id="calendar-form-heading">Ny aftale</h2>
+    <form id="calendar-form">
+      <div class="field"><label for="event-title">Titel</label><input id="event-title" type="text" maxlength="120" required placeholder="Fx lægebesøg eller hent medicin"></div>
+      <div class="form-grid">
+        <div class="field"><label for="event-start">Start</label><input id="event-start" type="datetime-local" required></div>
+        <div class="field"><label for="event-end">Slut</label><input id="event-end" type="datetime-local" required></div>
+      </div>
+      <div class="field"><label for="event-kind">Type</label><select id="event-kind">
+        <option value="appointment">Aftale</option><option value="reminder">Påmindelse</option><option value="medication">Medicin / tilskud</option>
+      </select></div>
+      <div class="field"><label for="event-visibility">Hvem kan se aftalen?</label><select id="event-visibility">
+        <option value="family">Begge i familien</option><option value="private">Kun mig (privat)</option>
+      </select><p class="help">Private aftaler kan ikke læses fra den anden persons login.</p></div>
+      <fieldset class="calendar-mode"><legend>Visning i familieoversigten</legend><label><input id="event-family-visible" type="checkbox" checked> Vis aftalen i den almindelige familiekalender</label>
+      <p class="fineprint">Slår du dette fra, gemmes aftalen stadig og kan vises via filteret »Vis skjulte aftaler«. Private aftaler kræver filteret »Vis mine private«.</p></fieldset>
+      <div class="field"><label for="event-details">Noter (valgfrit)</label><textarea id="event-details" rows="2" maxlength="500"></textarea></div>
+      <div class="row"><button class="btn primary" id="calendar-submit" type="submit">Gem aftale</button><button class="btn hidden" id="calendar-cancel" type="button">Annuller redigering</button></div>
+      <p id="calendar-form-notice" class="notice" role="status"></p>
+    </form>
+  </div>
+</section>
+<section class="view" id="view-moduler" aria-label="Flere familiemoduler">
+  <div class="panel">
+    <h2>Flere moduler</h2>
+    <p class="subtle small">Disse områder er placeholders, indtil vi bygger dem. De bestemmer ikke den endelige forside.</p>
+    <div class="module-grid">
+      <div class="module-tile"><strong>D-dråber og jern</strong><span>Plan, registrering og påmindelser – kommer senere</span></div>
+      <div class="module-tile"><strong>Rengøringsplan</strong><span>Gentagne opgaver og ansvar – kommer senere</span></div>
+      <div class="module-tile"><strong>Indkøbsliste</strong><span>Fælles indkøb – kommer senere</span></div>
+      <div class="module-tile"><strong>Madplan & opskrifter</strong><span>Ugeplan og ingredienser – kommer senere</span></div>
+    </div>
+  </div>
+</section>
 </main>
-<footer>Alinas Mælk & log · Privat familielog · Synkroniseres via Supabase</footer>
+<footer>Familiedashboard · Privat familielog · Synkroniseres via Supabase</footer>
 </div>
 
 <nav id="main-nav" class="nav hidden" aria-label="Hovedmenu"><div class="nav-inner">
-  <button type="button" class="active" data-go="overblik" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M9 20v-6h6v6" stroke-linecap="round" stroke-linejoin="round"/></svg>Overblik</button>
-  <button type="button" data-go="registrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 4v16M4 12h16" stroke-linecap="round" stroke-width="2.3"/></svg>Registrer</button>
-  <button type="button" data-go="beregner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2m4 0h2m-8 4h2m4 0h2M8 18h8" stroke-linecap="round"/></svg>Beregner</button>
-  <button type="button" data-go="historik"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18M7 14h3m4 0h3m-10 4h3" stroke-linecap="round"/></svg>Historik</button>
+  <button type="button" class="active" data-go="hjem" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M9 20v-6h6v6" stroke-linecap="round" stroke-linejoin="round"/></svg>Hjem</button>
+  <button type="button" data-go="overblik"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20s-8-4.3-8-10a4.4 4.4 0 0 1 8-2.3A4.4 4.4 0 0 1 20 10c0 5.7-8 10-8 10Z" stroke-linecap="round" stroke-linejoin="round"/></svg>Alina</button>
+  <button type="button" data-go="kalender"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18" stroke-linecap="round"/></svg>Kalender</button>
+  <button type="button" data-go="moduler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>Mere</button>
 </div></nav>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0"></script>
+<script src="./family-dashboard.js"></script>
 <script>
 (function () {
 'use strict';
@@ -299,10 +385,13 @@ function validEntry(e){
 }
 function view(view){
  document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id==='view-'+view));
- document.querySelectorAll('#main-nav button').forEach(el=>{const selected=el.dataset.go===view;el.classList.toggle('active',selected);selected?el.setAttribute('aria-current','page'):el.removeAttribute('aria-current')});
+ const navGroup=['registrer','beregner','historik','vaegt'].includes(view)?'overblik':view;
+ document.querySelectorAll('#main-nav button').forEach(el=>{const selected=el.dataset.go===navGroup;el.classList.toggle('active',selected);selected?el.setAttribute('aria-current','page'):el.removeAttribute('aria-current')});
+ window.FamilyDashboard?.onView(view);
  window.scrollTo({top:0,behavior:'instant'});
 }
 function showGate(mode){
+ window.FamilyDashboard?.reset();
  activeTimers={breast:null,bottle:null};tickTimers();
  $('cloud-gate').classList.remove('hidden');$('app-main').classList.add('hidden');$('main-nav').classList.add('hidden');$('cloud-account').classList.add('hidden');
  $('auth-pane').classList.toggle('hidden',mode!=='auth');$('family-pane').classList.toggle('hidden',mode!=='family');
@@ -436,7 +525,7 @@ async function refreshData(){
     const r=await supabaseClient.from('alina_entries').select('*').eq('family_id',family.id).order('at',{ascending:false}).range(first,first+999);
     if(r.error)throw r.error;collected.push(...r.data);if(r.data.length<1000)break;
   }
-  entries=collected.map(dbToLocal);await refreshTimers();render();
+  entries=collected.map(dbToLocal);await refreshTimers();render();window.FamilyDashboard?.refresh();
   $('sync-status').textContent='Senest opdateret '+humanClock(new Date());
  }catch(e){$('sync-status').textContent='Kunne ikke synkronisere';warn('Kunne ikke hente fælles data: '+errText(e),'account-notice')}
  finally{refreshing=false}
@@ -558,6 +647,7 @@ async function importJSON(ev){
  }catch(e){warn('Import kunne ikke gennemføres: '+errText(e)+'. Kontrollér historikken inden du prøver igen.','backup-notice')}
  finally{$('import-json').disabled=false;await refreshData()}
 }
+window.FamilyDashboard?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view});
 $('history-date').value=localDay(new Date());resetForm();render();showGate('auth');
 setInterval(tickTimers,1000);
 document.querySelectorAll('[data-open-timer]').forEach(el=>el.addEventListener('click',()=>{resetForm();setKind(el.dataset.openTimer);view('registrer')}));
