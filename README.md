@@ -38,6 +38,19 @@ Et mobilvenligt, fælles dashboard for Frederik og Batoul med Supabase Auth/RLS.
 
 Supabase-projekt: `lsqasyswqwbggkzmsyvz`. Repo: `Freetarh/alina-log`.
 
+## Visuelt tema: Blomster og bier (november 2026)
+
+Appen har et samlet, mobilt tema med original vektorillustration af bier og vilde blomster. Den tidligere grønblå stil er bevaret som fallback, så funktionerne ikke er afhængige af billedfilerne.
+
+- `floral-theme.css` skal indlæses **sidst**, efter `family-dashboard.css`, `household.css` og `health.css`. Theme tokens og målrettede modul-accenter ligger her, ikke i JavaScript.
+- `art/bee-logo.svg` er app-logo/favicon og SVG-ikon i PWA-manifestet, mens gamle PNG-ikoner bevares som fallback.
+- `art/meadow-header.svg` er velkomstillustrationen på forsiden.
+- `art/flower-sprig.svg` er diskret baggrundsdekoration, der aldrig opfanger tryk.
+- Varme pastelfarver og farveaccenter bruges til at skelne moduler: kalender blå/lavendel, sundhed salvie, madplan fersken, tilskud honninggul, rengøring lavendel, indkøb mint og Alinas log blå/rosa.
+- Tekst og aktive knapper har kontrast mod lyse overflader; `prefers-reduced-motion` respekteres. Ingen nye trackers, webfont-CDN'er eller eksterne billedressourcer.
+- PWA app shell er version `alina-cloud-shell-v15`, hvor alle illustrationer og stylesheet caches. Ved ældre udseende: luk installeret app, genåbn eller genindlæs i browseren. PWA-ikonet kan afhængigt af Android blive ved med at vise den tidligere PNG, indtil geninstallation.
+- `tests/dashboard-smoke.test.cjs` kontrollerer bl.a. indlæsningsrækkefølgen og at theme-artwork er cached. Visuel accept på mobil er stadig nødvendig.
+
 ## WHO vægt-for-alder
 
 Fødselsdato: **6. oktober 2026**. WHO Child Growth Standards, piger, vægt-for-alder:
