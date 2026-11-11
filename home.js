@@ -1,73 +1,125 @@
-/* Provisional family homepage. Summaries only: never overrides module data. */
+/* Family home: a concise, actionable today view. No data is stored outside Supabase. */
 (function(){
 'use strict';
-const $=id=>document.getElementById(id),esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-const shortTime=d=>new Date(d).toLocaleTimeString("da-DK",{hour:"2-digit",minute:"2-digit"});
-const weekdays=["søndag","mandag","tirsdag","onsdag","torsdag","fredag","lørdag"];
-let api=null,last=0,loading=false,data={};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const localDay=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const clock=d=>new Date(d).toLocaleTimeString("da-DK",{hour:"2-digit",minute:"2-digit"});
+const dateLabel=d=>d.toLocaleDateString("da-DK",{weekday:"long",day:"numeric",month:"long"});
+const weekdays=(d)=>d.toLocaleDateString("da-DK",{weekday:"long"});
+const humanAge=()=>{
+ const today=new Date(),age=Math.max(0,Math.round((Date.UTC(today.getFullYear(),today.getMonth(),today.getDate())-Date.UTC(2026,9,6))/86400000));
+ return age<7?age+" dage":Math.floor(age/7)+" uger og "+(age%7)+" dage";
+};
+let api=null,last=0,loading=false,epoch=0,data=null,status="";
 const ctx=()=>api?.getState()||{};
+function latestFeed(entries){
+ return entries.filter(e=>(e.kind==="bottle"||e.kind==="breast")&&Number.isFinite(Date.parse(e.at)))
+ .sort((a,b)=>Date.parse(b.at)-Date.parse(a.at))[0];
+}
 function render(){
- const el=$("home-glance");if(!el)return;
- const {entries=[]}=ctx();
- const today=new Date(),ageDays=Math.max(0,Math.floor((Date.UTC(today.getFullYear(),today.getMonth(),today.getDate())-Date.UTC(2026,9,6))/86400000));
- const lastEntry=entries.filter(e=>e.at&&Number.isFinite(Date.parse(e.at))).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at))[0];
- const labels={breast:"Amning",bottle:"Flaske",diaper:"Ble",weight:"Vejning"};
- const supplements=data.supplements||[],doses=data.doses||[],chores=data.chores||[],groceries=data.groceries||[],meals=data.meals||[],events=data.events||[];
- const dToday=iso(today),doseCount=id=>doses.filter(d=>d.supplement_id===id&&iso(new Date(d.given_at))===dToday).length;
- const supplementText=supplements.length?supplements.map(p=>{
-  const count=doseCount(p.id);
-  return esc(p.title)+": "+count+(p.daily_goal?" / "+p.daily_goal:"")+" registreret";
- }).join(" · "):"Registrér D-dråber og jern";
- const choreDue=chores.filter(c=>!c.completed&&c.due_on<=dToday).length;
- const groLeft=groceries.filter(i=>!i.checked).length;
- const dinner=meals.find(x=>x.meal_date===dToday&&x.meal_slot==="dinner");
- const visibleEvents=events.filter(x=>x.visibility==="family"&&x.show_on_family_calendar);
- el.innerHTML='<div class="panel home-today"><div class="sectionhead"><div><span class="module-label">Foreløbig forside</span><h2 style="margin:8px 0 0">I dag · '+esc(weekdays[today.getDay()])+'</h2></div><button type="button" class="btn soft" data-home-refresh>Opdater</button></div>'+
-  '<p class="subtle small">Alina er '+Math.floor(ageDays/7)+' uger og '+(ageDays%7)+' dage. Dagens overblik samles fra jeres fælles moduler.</p>'+
-  '<div class="home-stats">'+
-  '<button type="button" data-home-go="kalender"><strong>'+visibleEvents.length+'</strong><span>Familieaftaler</span></button>'+
-  '<button type="button" data-home-go="rengoring"><strong>'+choreDue+'</strong><span>Rengøringsopgaver der skal klares</span></button>'+
-  '<button type="button" data-home-go="indkob"><strong>'+groLeft+'</strong><span>Varer mangler</span></button>'+
+ const root=$("home-glance");if(!root)return;
+ const {entries=[]}=ctx(),now=new Date(),today=localDay(now),haveData=Boolean(data);
+ const supplements=data?.supplements||[],doses=data?.doses||[],
+ chores=data?.chores||[],groceries=data?.groceries||[],meals=data?.meals||[],events=data?.events||[];
+ const nextEvents=events.filter(e=>Date.parse(e.starts_at)>=Date.now()-60000).sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at));
+ const allEvents=[...events].sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at));
+ const shownEvents=(nextEvents.length?nextEvents:allEvents).slice(0,2);
+ const due=chores.filter(c=>!c.completed&&c.due_on<=today).sort((a,b)=>a.due_on.localeCompare(b.due_on));
+ const shoppingCount=groceries.filter(x=>!x.checked).length;
+ const dinner=meals.find(m=>m.meal_date===today&&m.meal_slot==="dinner");
+ const lastFeed=latestFeed(entries),lastWeight=entries.filter(e=>e.kind==="weight"&&Number(e.grams)>0).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at))[0];
+ const recent=entries.filter(e=>Date.parse(e.at)>=Date.now()-86400000&&Date.parse(e.at)<=Date.now());
+ const bottleMl=recent.filter(e=>e.kind==="bottle").reduce((s,e)=>s+Number(e.taken||0),0);
+ const nursing=recent.filter(e=>e.kind==="breast").length;
+ const supplementRows=supplements.map(p=>{
+  const count=doses.filter(d=>d.supplement_id===p.id&&localDay(new Date(d.given_at))===today).length;
+  const complete=p.daily_goal&&count>=p.daily_goal;
+  return '<div class="home-check-row"><span class="home-status-icon '+(complete?"is-done":"")+'" aria-hidden="true">'+(complete?"✓":"•")+'</span>'+
+   '<div class="item-main"><strong>'+esc(p.title)+'</strong><span class="home-secondary">'+count+(p.daily_goal?" af "+p.daily_goal:"")+" registreret i dag"+(p.daily_goal&&complete?" · Mål nået":"")+'</span></div></div>';
+ }).join("");
+ const eventLines=shownEvents.map(e=>{
+  const tm=e.google_all_day?"Hele dagen":clock(e.starts_at);
+  return '<div class="home-event-row"><span class="home-event-time">'+esc(tm)+'</span><span class="home-event-title">'+esc(e.title)+'</span></div>';
+ }).join("");
+ const lastMeal=lastFeed?(lastFeed.kind==="breast"?"Amning":'Flaske'+(Number(lastFeed.taken)>0?" · "+Number(lastFeed.taken)+" ml":""))+
+   " kl. "+clock(lastFeed.at):"Ikke registreret";
+ const statLine='<span>'+bottleMl.toLocaleString("da-DK")+' ml flaske</span><span>'+nursing+" amninger</span>";
+ const note=haveData?(last?"Opdateret "+clock(new Date(last)):""):("Henter dagens overblik…");
+ root.innerHTML=
+  '<section class="home-intro" aria-label="Dagens introduktion"><div><span class="home-eyebrow">Dagens overblik</span>'+
+  '<h2>I dag</h2><p>'+esc(dateLabel(now))+' <span aria-hidden="true">·</span> Alina: '+esc(humanAge())+'</p></div>'+
+  '<button type="button" class="home-refresh-btn" data-home-refresh aria-label="Opdater forside" title="Opdater forside">'+
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" width="21" height="21" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2 5.5M20 4v7h-7"/></svg></button></section>'+
+  '<div class="home-quick" aria-label="Hurtig registrering">'+
+  '<button type="button" data-home-kind="breast"><span class="home-quick-ico">A</span>Amning</button>'+
+  '<button type="button" data-home-kind="bottle"><span class="home-quick-ico">ml</span>Flaske</button>'+
+  '<button type="button" data-home-kind="diaper"><span class="home-quick-ico">B</span>Ble</button>'+
+  '<button type="button" data-home-go="kalender"><span class="home-quick-ico">+</span>Aftale</button>'+
   '</div>'+
-  '<div class="home-row"><div class="item-main"><strong>Alinas tilskud</strong><p>'+supplementText+'</p></div><button type="button" class="tiny-btn" data-home-go="tilskud">Åbn</button></div>'+
-  '<div class="home-row"><div class="item-main"><strong>Aftensmad</strong><p>'+(dinner?esc(dinner.title):"Ikke planlagt endnu")+'</p></div><button type="button" class="tiny-btn" data-home-go="madplan">Åbn</button></div>'+
-  '<div class="home-row"><div class="item-main"><strong>Seneste registrering for Alina</strong><p>'+(lastEntry?(esc(labels[lastEntry.kind]||"Log")+": "+shortTime(lastEntry.at)):"Ingen registrering")+'</p></div><button type="button" class="tiny-btn" data-home-go="overblik">Åbn</button></div>'+
-  '<p id="home-status" class="section-notice" role="status"></p></div>';
+  '<section class="panel home-section" aria-label="Aftaler og huskeliste">'+
+  '<div class="home-section-head"><h2>Dagens aftaler</h2><button type="button" data-home-go="kalender" class="home-text-action">Kalender <span aria-hidden="true">›</span></button></div>'+
+  (haveData?(eventLines||'<p class="home-empty-note">Ingen fælles aftaler i dag.</p>'):'<p class="home-empty-note">Henter aftaler…</p>')+
+  (haveData&&allEvents.length>2?'<p class="home-count-hint">'+allEvents.length+' aftaler i dag i alt</p>':"")+
+  '<div class="home-divider"></div>'+
+  '<div class="home-section-head"><h2>Husk i dag</h2><button type="button" data-home-go="tilskud" class="home-text-action">Tilskud <span aria-hidden="true">›</span></button></div>'+
+  (haveData?(supplementRows||'<p class="home-empty-note">Ingen aktive tilskudsplaner.</p>'):'<p class="home-empty-note">Henter tilskud…</p>')+
+  '<div class="home-check-row home-chore-row"><span class="home-status-icon" aria-hidden="true">✓</span><div class="item-main"><strong>Rengøring</strong>'+
+  '<span class="home-secondary">'+(haveData?(due.length?due.length+" opgaver skal klares"+(due[0]?.title?" · "+esc(due[0].title):""):"Ingen forfaldne opgaver"):"Henter opgaver…")+'</span></div>'+
+  '<button type="button" data-home-go="rengoring" class="home-text-action home-side-action">Åbn <span aria-hidden="true">›</span></button></div>'+
+  '</section>'+
+  '<div class="home-card-grid">'+
+  '<section class="home-mini-card"><div class="home-mini-title">Alina <button type="button" data-home-go="overblik" aria-label="Åbn Alinas log">›</button></div>'+
+  '<strong>'+esc(lastMeal)+'</strong><p>Seneste måltid</p><div class="home-mini-foot">'+statLine+'</div>'+
+  (lastWeight?'<div class="home-mini-foot">Seneste vægt: '+Number(lastWeight.grams).toLocaleString("da-DK")+' g</div>':"")+'</section>'+
+  '<section class="home-mini-card"><div class="home-mini-title">Aftensmad <button type="button" data-home-go="madplan" aria-label="Åbn madplan">›</button></div>'+
+  '<strong>'+(haveData?(dinner?esc(dinner.title):"Ikke planlagt"):"Henter…")+'</strong><p>'+esc(weekdays(now))+'</p>'+
+  '<div class="home-mini-foot home-mini-link"><button type="button" data-home-go="indkob">Indkøb · '+(haveData?shoppingCount:"…")+' mangler <span aria-hidden="true">›</span></button></div></section>'+
+  '</div>'+
+  '<div class="home-foot"><span id="home-status" role="status">'+esc(status||note)+'</span><button type="button" data-home-go="moduler">Alle moduler <span aria-hidden="true">›</span></button></div>';
 }
 async function refresh(force=false){
- const {family}=ctx();if(!family||loading||(!force&&Date.now()-last<60000))return;
- loading=true;
+ const {family}=ctx();
+ if(!family||loading||(!force&&Date.now()-last<30000))return;
+ const sequence=epoch;loading=true;status="";
  try{
-  const start=new Date();start.setHours(0,0,0,0);const end=new Date(start);end.setDate(end.getDate()+1);
-  const dToday=iso(start);
-  const req=[
+  const start=new Date();start.setHours(0,0,0,0);
+  const end=new Date(start);end.setDate(end.getDate()+1);
+  const d=localDay(start);
+  const requests=[
    api.client.from("family_supplements").select("id,title,daily_goal").eq("family_id",family.id).eq("active",true),
    api.client.from("family_supplement_doses").select("supplement_id,given_at").eq("family_id",family.id).gte("given_at",start.toISOString()).lt("given_at",end.toISOString()),
-   api.client.from("family_chores").select("due_on,completed").eq("family_id",family.id).eq("completed",false).lte("due_on",dToday),
+   api.client.from("family_chores").select("title,due_on,completed").eq("family_id",family.id).eq("completed",false).lte("due_on",d),
    api.client.from("family_groceries").select("checked").eq("family_id",family.id).eq("checked",false),
-   api.client.from("family_meal_plan").select("meal_date,meal_slot,title").eq("family_id",family.id).eq("meal_date",dToday).eq("meal_slot","dinner"),
-   api.client.from("family_events").select("starts_at,visibility,show_on_family_calendar").eq("family_id",family.id).eq("visibility","family").eq("show_on_family_calendar",true).is("google_removed_at",null).gte("starts_at",start.toISOString()).lt("starts_at",end.toISOString())
+   api.client.from("family_meal_plan").select("meal_date,meal_slot,title").eq("family_id",family.id).eq("meal_date",d).eq("meal_slot","dinner"),
+   api.client.from("family_events").select("title,starts_at,google_all_day,visibility,show_on_family_calendar")
+    .eq("family_id",family.id).eq("visibility","family").eq("show_on_family_calendar",true)
+    .is("google_removed_at",null).gte("starts_at",start.toISOString()).lt("starts_at",end.toISOString()).order("starts_at").limit(30)
   ];
-  const results=await Promise.all(req);
-  for(const r of results)if(r.error)throw r.error;
-  if(ctx().family?.id!==family.id)return;
-  const fields=["supplements","doses","chores","groceries","meals","events"];
-  data=Object.fromEntries(results.map((r,i)=>[fields[i],r.data||[]]));
-  last=Date.now();render();
- }catch(e){render();if($("home-status"))$("home-status").textContent="Kunne ikke opdatere overblikket: "+e.message;}
- finally{loading=false;}
+  const all=await Promise.all(requests);
+  for(const r of all)if(r.error)throw r.error;
+  if(sequence!==epoch||ctx().family?.id!==family.id)return;
+  data=Object.fromEntries(all.map((r,i)=>[["supplements","doses","chores","groceries","meals","events"][i],r.data||[]]));
+  last=Date.now();
+ }catch(e){
+  if(sequence!==epoch)return;
+  status="Kunne ikke opdatere alle oplysninger: "+(e?.message||String(e));
+ }finally{
+  if(sequence===epoch){loading=false;render();}
+ }
 }
 function init(config){
- api=config;const root=$("home-glance");
- root.addEventListener("click",e=>{
-  const go=e.target.closest("[data-home-go]"),ref=e.target.closest("[data-home-refresh]");
-  if(go)api.go(go.dataset.homeGo);if(ref)void refresh(true);
+ api=config;
+ $("home-glance").addEventListener("click",e=>{
+  const navigate=e.target.closest("[data-home-go]"),reload=e.target.closest("[data-home-refresh]"),quick=e.target.closest("[data-home-kind]");
+  if(navigate){api.go(navigate.dataset.homeGo);return;}
+  if(reload){void refresh(true);return;}
+  if(quick)api.openEntry(quick.dataset.homeKind);
  });
  render();
 }
-function onView(v){if(v==="hjem")void refresh(true);}
+function onView(name){if(name==="hjem"){render();void refresh(true);}}
 function update(){if($("view-hjem")?.classList.contains("active")){render();void refresh();}}
-function reset(){data={};last=0;loading=false;if(api)render();}
+function reset(){epoch++;data=null;last=0;loading=false;status="";if(api)render();}
 window.HomeModule={init,onView,refresh:update,reset};
 })();
