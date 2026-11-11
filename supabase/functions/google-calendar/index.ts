@@ -127,8 +127,31 @@ async function readableEventList(token,calendarId,date) {
   return items.filter(x=>x.status!=="cancelled"&&x.start&&(x.start.dateTime||x.start.date)).slice(0,1000).map(x=>({
     id:x.id,summary:String(x.summary||"(Uden titel)").slice(0,160),
     starts_at:x.start.dateTime||x.start.date+"T00:00:00",ends_at:x.end?.dateTime||x.end?.date+"T00:00:00",
-    all_day:!!x.start.date,calendar_id:calendarId,link:x.htmlLink||""
+    all_day:!!x.start.date,google_visibility:x.visibility||"default",calendar_id:calendarId,link:x.htmlLink||""
   }));
+}
+async function familyPersonalEvents(user,chosenDay) {
+ const {data:optedIn,error}=await admin.from("google_personal_share_settings")
+   .select("user_id,calendar_id").eq("family_id",user.family_id).eq("share_enabled",true).limit(10);
+ if(error)throw error;
+ const shared=await sharedSetting(user.family_id);
+ let results=[],unavailable=0;
+ for(const owner of optedIn||[]){
+   if(shared&&owner.calendar_id===shared.google_calendar_id)continue; // already on the shared calendar
+   try{
+     const token=await googleToken(owner.user_id);
+     const events=await readableEventList(token,owner.calendar_id,chosenDay);
+     const {data:excluded,error:hideErr}=await admin.from("google_hidden_events")
+       .select("event_id").eq("user_id",owner.user_id).eq("calendar_id",owner.calendar_id).limit(2000);
+     if(hideErr)throw hideErr;
+     const hidden=new Set((excluded||[]).map(e=>e.event_id));
+     results.push(...events.filter(e=>!hidden.has(e.id)&&e.google_visibility!=="private").map(e=>({
+       id:e.id,summary:e.summary,starts_at:e.starts_at,ends_at:e.ends_at,
+       all_day:e.all_day,source_user_id:owner.user_id
+     })));
+   }catch(err){console.error("Shared personal calendar read failed",owner.user_id,err?.message||String(err));unavailable++;}
+ }
+ return {events:results,unavailable};
 }
 async function sharedSetting(familyId) {
  const {data,error}=await admin.from("family_google_calendar_settings").select("*").eq("family_id",familyId).maybeSingle();
@@ -261,7 +284,9 @@ async function handlePost(req) {
  if(action==="status"){
    const {data:conn}=await admin.from("google_calendar_connections").select("google_email,connected_at").eq("user_id",user.id).maybeSingle();
    const shared=await sharedSetting(user.family_id);
+   const {data:sharing}=await admin.from("google_personal_share_settings").select("calendar_id,share_enabled").eq("user_id",user.id).maybeSingle();
    return json({configured:configured(),connected:!!conn,email:conn?.google_email||"",
+     sharing:sharing?{calendar_id:sharing.calendar_id,enabled:sharing.share_enabled}:null,
      shared:shared?{name:shared.google_calendar_name,calendar_id:shared.google_calendar_id,owned_by_me:shared.owner_user_id===user.id,last_synced_at:shared.last_synced_at}:null},req);
  }
  if(!configured())return fail("Google Kalender mangler opsætning af OAuth i Supabase.",req,503);
@@ -278,8 +303,12 @@ async function handlePost(req) {
  if(action==="disconnect"){
    const {data:shared}=await admin.from("family_google_calendar_settings").select("owner_user_id").eq("family_id",user.family_id).maybeSingle();
    if(shared?.owner_user_id===user.id)await admin.from("family_google_calendar_settings").delete().eq("family_id",user.family_id);
+   await admin.from("google_personal_share_settings").delete().eq("user_id",user.id);
    await admin.from("google_calendar_connections").delete().eq("user_id",user.id);
    return json({ok:true},req);
+ }
+ if(action==="family-events"){
+   const data=await familyPersonalEvents(user,String(body.day||""));return json(data,req);
  }
  if(action==="sync-shared"){
    const data=await syncShared(user);return json(data,req);
