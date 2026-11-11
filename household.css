@@ -1,0 +1,45 @@
+/* Mobile-first family modules. Uses established dashboard palette. */
+.house-stack{display:grid;gap:10px;margin-top:15px}
+.house-card{background:#f9fcfb;border:1px solid var(--edge);border-radius:15px;padding:15px;margin:10px 0}
+.house-card h3{margin:0;font-size:.96rem;line-height:1.4}
+.house-card h4{font-size:.82rem;color:var(--muted);margin:13px 0 4px}
+.house-card .fineprint{margin:8px 0 13px}
+.house-card .row{margin-top:9px}
+.house-tag{font-size:.7rem;color:#38625f;background:#e6f4f1;border:1px solid #cfe3df;padding:5px 8px;border-radius:18px;font-weight:740;white-space:nowrap}
+.house-tag.done{color:#145d52;background:#e0f3e8;border-color:#c6e9d7}
+.house-inline{display:flex;gap:8px;align-items:stretch}
+.house-inline input{min-width:0;flex:1;border:1px solid #bfcfcd;border-radius:11px;padding:10px;background:white}
+.house-inline button{flex-shrink:0}
+.house-details{margin-top:13px;border-top:1px solid var(--edge);padding-top:12px}
+.house-details summary{color:var(--teal);font-weight:750;font-size:.85rem;cursor:pointer;margin-bottom:12px}
+.house-details .field input,.house-details .field select{width:100%;min-width:0}
+.house-details .btn{margin-top:4px}
+.house-check{display:inline-flex;align-items:center;gap:7px;font-size:.79rem;line-height:1.45;color:var(--ink)}
+.house-check input,.house-grocery-checkbox input{accent-color:var(--teal);width:18px;height:18px;flex:0 0 auto}
+.house-grocery-checkbox{display:flex;align-items:center;justify-content:center;min-width:25px;cursor:pointer}
+.house-muted{opacity:.7}
+.house-muted .item-title{text-decoration:line-through;text-decoration-color:#8a9f9b}
+.house-recipe{padding:0;overflow:hidden}
+.house-recipe summary{padding:13px 15px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.house-recipe summary::marker{color:var(--teal)}
+.house-recipe summary strong{font-size:.9rem;overflow-wrap:anywhere}
+.house-recipe-content{border-top:1px solid var(--edge);padding:12px 15px 15px}
+.house-lines{white-space:normal;overflow-wrap:anywhere;line-height:1.6;font-size:.86rem;margin:6px 0 13px}
+.meal-line{padding:11px 0;display:flex;gap:9px;align-items:flex-start;border-top:1px solid #e1eae6}
+.meal-line:first-of-type{margin-top:8px}
+.meal-line .item-title{margin-top:3px}
+.meal-line .item-actions{flex-direction:row;flex-wrap:wrap}
+.meal-line .tiny-btn{min-height:35px}
+.house-stack>.item{margin:0}
+#week-label{font-size:.86rem;line-height:1.4;flex:1;min-width:100px;text-align:center}
+#meal-week{margin-top:14px}
+#meal-week .house-card{margin:0}
+#chore-list{margin-top:16px}
+#gro-list{margin-top:13px}
+#supplement-history{display:grid;gap:8px}
+#chore-history{display:grid;gap:8px}
+#growth-own-chart{margin:12px 0}
+#growth-measures-list{margin:12px 0}
+#supplement-notice,#gro-notice,#meal-notice,#recipe-notice,#chore-notice,#growth-notice{min-height:1.25em}
+#gro-name,#chore-title,#recipe-title,#meal-title{scroll-margin-top:70px}
+@media(max-width:420px){.house-inline{flex-wrap:wrap}.house-inline input{flex-basis:100%}.house-inline button{width:100%}.house-card{padding:12px}.meal-line .item-actions{flex-direction:column}.house-recipe summary{flex-wrap:wrap}}
