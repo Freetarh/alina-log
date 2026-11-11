@@ -7,7 +7,7 @@ const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"
 const date=d=>new Date(d).toLocaleDateString("da-DK",{day:"numeric",month:"short",year:"numeric"});
 const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const one=x=>Number(x).toLocaleString("da-DK",{maximumFractionDigits:1});
-const born=Date.UTC(2026,9,6),age=d=>(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())-born)/dayMs;
+const born=Date.UTC(2026,9,6),age=d=>(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-born)/dayMs;
 const W="0 .3809 3.2322 .14171|1 .2671 3.3388 .14600|2 .2304 3.5693 .14339|3 .2024 3.8352 .14060|4 .1789 4.0987 .13805|5 .1582 4.3476 .13583|6 .1395 4.5793 .13392|7 .1224 4.7950 .13228|8 .1065 4.9959 .13087|9 .0918 5.1842 .12966|10 .0779 5.3618 .12861|11 .0648 5.5295 .12770|12 .0525 5.6883 .12691|13 .0407 5.8393 .12622";
 const M="0 .3809 3.2322 .14171|1 .1714 4.1873 .13724|2 .0962 5.1282 .13000|3 .0402 5.8458 .12619|4 -.0050 6.4237 .12402|5 -.0430 6.8985 .12274|6 -.0756 7.2970 .12204|7 -.1039 7.6422 .12178|8 -.1288 7.9487 .12181|9 -.1507 8.2254 .12199|10 -.1700 8.4800 .12223|11 -.1872 8.7192 .12247|12 -.2024 8.9481 .12268|13 -.2158 9.1699 .12283|14 -.2278 9.3870 .12294|15 -.2384 9.6008 .12299|16 -.2478 9.8124 .12303|17 -.2562 10.0226 .12306|18 -.2637 10.2315 .12309|19 -.2703 10.4393 .12315|20 -.2762 10.6464 .12323|21 -.2815 10.8534 .12335|22 -.2862 11.0608 .12350|23 -.2903 11.2688 .12369|24 -.2941 11.4775 .12390";
 function table(raw,days){return raw.split("|").map(line=>{const [x,L,M,S]=line.trim().split(/\s+/).map(Number);return {day:x*days,L,M,S};});}
