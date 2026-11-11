@@ -1,7 +1,7 @@
 /* Additional family dashboard modules. Existing baby-log code remains in index.html. */
 (function () {
 'use strict';
-let api=null, calendarEvents=[], eventEditing=null, loadingEvents=false;
+let api=null, calendarEvents=[], eventEditing=null, loadingEvents=false, calendarMonth=null;
 const byId=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const day=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -52,24 +52,88 @@ function changeKindDefaults(){
  byId('event-family-visible').checked=!special;
  byId('event-visibility').value=special?'private':'family';
 }
+function calendarDayItems(dateText){
+ const start=new Date(dateText+"T00:00:00"),end=new Date(start);
+ end.setDate(end.getDate()+1);
+ const from=start.getTime(),until=end.getTime();
+ const showHidden=byId("calendar-show-hidden").checked,showPrivate=byId("calendar-show-private").checked;
+ return calendarEvents.filter(e=>{
+  if(e.google_removed_at||!Number.isFinite(Date.parse(e.starts_at))||!Number.isFinite(Date.parse(e.ends_at)))return false;
+  if(Date.parse(e.starts_at)>=until||Date.parse(e.ends_at)<=from)return false;
+  return e.visibility==="private"?showPrivate:(e.show_on_family_calendar||showHidden);
+ }).sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at));
+}
+function calendarMonthDate(){
+ if(!calendarMonth||!Number.isFinite(calendarMonth.getTime())){
+  const selected=new Date((byId("calendar-day").value||day(new Date()))+"T12:00:00");
+  calendarMonth=new Date(selected.getFullYear(),selected.getMonth(),1,12);
+ }
+ return calendarMonth;
+}
+function renderMonth(){
+ const selected=byId("calendar-day").value||day(new Date()),month=calendarMonthDate();
+ const heading=month.toLocaleDateString("da-DK",{month:"long",year:"numeric"});
+ byId("calendar-month-label").textContent=heading.charAt(0).toLocaleUpperCase("da-DK")+heading.slice(1);
+ const today=day(new Date()),start=new Date(month.getFullYear(),month.getMonth(),1,12);
+ start.setDate(start.getDate()-(start.getDay()+6)%7);
+ const last=new Date(month.getFullYear(),month.getMonth()+1,0,12);
+ const weeks=Math.ceil((((last-start)/86400000)+1)/7);
+ const cells=[];
+ for(let i=0;i<weeks*7;i++){
+  const date=new Date(start);date.setDate(start.getDate()+i);
+  const value=day(date),items=calendarDayItems(value);
+  const outside=date.getMonth()!==month.getMonth(),chosen=value===selected,todayFlag=value===today;
+  const count=items.length,mark=count?'<span class="calendar-day-dots" aria-hidden="true">'+
+    '<i class="calendar-dot"></i>'+(count>1?'<small>'+count+'</small>':'')+'</span>':'<span class="calendar-day-dots" aria-hidden="true"></span>';
+  cells.push('<button type="button" class="calendar-day-cell'+(outside?' is-outside':'')+
+   (chosen?' is-selected':'')+(todayFlag?' is-today':'')+'" data-cal-day="'+value+'" aria-label="'+
+   esc(date.toLocaleDateString("da-DK",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+
+   (count?", "+count+" synlige aftaler":""))+'" aria-pressed="'+chosen+'">'+
+   '<span class="calendar-day-number">'+date.getDate()+'</span>'+mark+'</button>');
+ }
+ byId("calendar-month-grid").innerHTML=cells.join("");
+}
 function renderCalendar(){
- const dayValue=byId('calendar-day').value||day(new Date());
- const showHidden=byId('calendar-show-hidden').checked;
- const showPrivate=byId('calendar-show-private').checked;
- const candidates=calendarEvents.filter(e=>!e.google_removed_at&&day(new Date(e.starts_at))===dayValue);
- const visible=candidates.filter(e=>e.visibility==='private'?showPrivate:(e.show_on_family_calendar||showHidden));
- const target=byId('calendar-list');if(!target)return;
- byId('calendar-count').textContent=visible.length+' vises'+(candidates.length>visible.length?' · '+(candidates.length-visible.length)+' skjult':'');
- if(!visible.length){target.innerHTML='<div class="empty">Ingen synlige aftaler denne dag. Du kan vælge at vise skjulte eller private aftaler ovenfor.</div>';return;}
+ const dateText=byId("calendar-day").value||day(new Date());
+ const visible=calendarDayItems(dateText),target=byId("calendar-list");
+ if(!target)return;
+ const selectedDate=new Date(dateText+"T12:00:00");
+ const label=selectedDate.toLocaleDateString("da-DK",{weekday:"long",day:"numeric",month:"long"});
+ byId("calendar-selected-label").textContent=label.charAt(0).toLocaleUpperCase("da-DK")+label.slice(1);
+ byId("calendar-count").textContent=visible.length+" "+(visible.length===1?"aftale":"aftaler");
+ renderMonth();
+ if(!visible.length){
+  target.innerHTML='<div class="empty">Ingen synlige aftaler denne dag. Tryk på en anden dato eller opret en aftale.</div>';
+  return;
+ }
  const currentUser=context().user?.id;
  target.innerHTML=visible.map(e=>{
-  const start=new Date(e.starts_at),end=new Date(e.ends_at),owner=e.created_by===currentUser||e.visibility==='family';
-  const tags=(e.visibility==='private'?'<span class="pill-tag">Privat</span>':(!e.show_on_family_calendar?'<span class="pill-tag">Skjult fra overblik</span>':'<span class="pill-tag">Fælles</span>'));
-  const type={appointment:'Aftale',reminder:'Påmindelse',medication:'Medicin / tilskud'}[e.kind]||'Aftale';
-  return '<div class="calendar-item"><div class="calendar-body"><div class="calendar-title">'+esc(e.title)+'</div><div class="calendar-meta">'+(e.google_all_day?'Hele dagen':esc(formatTime(start))+'–'+esc(formatTime(end)))+' · '+type+'</div>'+
-   (e.details?'<div class="calendar-meta">'+esc(e.details)+'</div>':'')+tags+'</div>'+
-   (owner?'<div class="calendar-actions"><button type="button" class="tiny-btn" data-event-edit="'+esc(e.id)+'">Ret</button><button type="button" class="tiny-btn" data-event-delete="'+esc(e.id)+'">Slet</button></div>':'')+'</div>';
- }).join('');
+  const start=new Date(e.starts_at),end=new Date(e.ends_at),owner=e.created_by===currentUser||e.visibility==="family";
+  const tags=(e.visibility==="private"?'<span class="pill-tag">Privat</span>':
+    (!e.show_on_family_calendar?'<span class="pill-tag">Skjult fra overblik</span>':'<span class="pill-tag">Fælles</span>'));
+  const type={appointment:"Aftale",reminder:"Påmindelse",medication:"Medicin / tilskud"}[e.kind]||"Aftale";
+  const allDay=e.google_all_day?"Hele dagen":
+    (day(start)===dateText?esc(formatTime(start)):"Fra "+esc(formatDay(start)))+
+    "–"+(day(end)===dateText?esc(formatTime(end)):esc(formatDay(end)));
+  return '<div class="calendar-item"><div class="calendar-body"><div class="calendar-title">'+esc(e.title)+'</div><div class="calendar-meta">'+allDay+" · "+type+'</div>'+
+   (e.details?'<div class="calendar-meta">'+esc(e.details)+'</div>':"")+tags+'</div>'+
+   (owner?'<div class="calendar-actions"><button type="button" class="tiny-btn" data-event-edit="'+esc(e.id)+'">Ret</button><button type="button" class="tiny-btn" data-event-delete="'+esc(e.id)+'">Slet</button></div>':"")+'</div>';
+ }).join("");
+}
+function selectCalendarDay(value,notifyGoogle=true){
+ const selected=new Date(value+"T12:00:00");
+ if(!Number.isFinite(selected.getTime()))return;
+ byId("calendar-day").value=day(selected);
+ calendarMonth=new Date(selected.getFullYear(),selected.getMonth(),1,12);
+ clearCalendarForm();
+ byId("calendar-editor").open=false;
+ renderCalendar();
+ if(notifyGoogle)window.GoogleCalendarModule?.onDateChange();
+}
+function openCalendarEditor(){
+ clearCalendarForm();
+ byId("calendar-editor").open=true;
+ byId("calendar-form").scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function refreshCalendar(){
  const {family}=context();if(!family||!api||loadingEvents)return;
@@ -102,10 +166,14 @@ async function saveCalendar(e){
   const {data,error}=await query;if(error)throw error;if(!data?.length)throw new Error('Aftalen blev ikke gemt. Kontrollér adgang.');
   const googleSync=row.visibility==='family'&&row.show_on_family_calendar ?
     await window.GoogleCalendarModule?.syncLocal(data[0].id):null;
-  byId('calendar-day').value=day(start);clearCalendarForm();await refreshCalendar();
-  byId('calendar-form-notice').textContent=googleSync?.error?
+  byId('calendar-day').value=day(start);calendarMonth=new Date(start.getFullYear(),start.getMonth(),1,12);
+  clearCalendarForm();byId("calendar-editor").open=false;await refreshCalendar();
+  window.GoogleCalendarModule?.onDateChange();
+  const message=googleSync?.error?
     'Aftalen er gemt i familiedashboardet. Google-synkronisering fejlede: '+googleSync.error:
     googleSync?.synced?'Aftalen er gemt og synkroniseret til Google.':'Aftalen er gemt i familiedashboardet.';
+  byId("calendar-form-notice").textContent=message;
+  byId("calendar-status").textContent=message;
  }catch(error){byId('calendar-form-notice').textContent='Kunne ikke gemme aftalen: '+(error.message||String(error));}
  finally{button.disabled=false;}
 }
@@ -119,6 +187,7 @@ function handleCalendarList(e){
   byId('event-title').value=event.title;byId('event-start').value=dateTime(new Date(event.starts_at));byId('event-end').value=dateTime(new Date(event.ends_at));
   byId('event-kind').value=event.kind;byId('event-details').value=event.details||'';byId('event-visibility').value=event.visibility;
   byId('event-family-visible').checked=event.show_on_family_calendar;byId('event-visibility').querySelector('option[value="private"]').disabled=event.created_by!==context().user?.id||Boolean(event.google_event_id);byId('calendar-form-notice').textContent='';
+  byId("calendar-editor").open=true;
   byId('calendar-form').scrollIntoView({behavior:'smooth',block:'start'});return;
  }
  if(!confirm('Slet aftalen "'+event.title+'"'+(event.google_event_id?' både i dashboardet og på den fælles Google-kalender':'')+'?'))return;
@@ -136,27 +205,36 @@ function handleCalendarList(e){
 }
 function init(config){
  api=config;
- byId('calendar-day').value=day(new Date());
+ byId("calendar-day").value=day(new Date());
+ calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1,12);
  clearCalendarForm();
- byId('weight-period').addEventListener('change',renderWeights);
- byId('calendar-day').addEventListener('change',()=>{clearCalendarForm();renderCalendar();window.GoogleCalendarModule?.onDateChange();});
- for(const [id,delta] of [['calendar-prev',-1],['calendar-next',1]]){
-  byId(id).addEventListener('click',()=>{const d=new Date((byId('calendar-day').value||day(new Date()))+'T12:00:00');d.setDate(d.getDate()+delta);byId('calendar-day').value=day(d);clearCalendarForm();renderCalendar();window.GoogleCalendarModule?.onDateChange();});
+ byId("weight-period").addEventListener("change",renderWeights);
+ byId("calendar-day").addEventListener("change",()=>selectCalendarDay(byId("calendar-day").value));
+ byId("calendar-month-grid").addEventListener("click",e=>{
+  const button=e.target.closest("[data-cal-day]");
+  if(button)selectCalendarDay(button.dataset.calDay);
+ });
+ for(const [id,delta] of [["calendar-prev",-1],["calendar-next",1]]){
+  byId(id).addEventListener("click",()=>{
+   const m=calendarMonthDate(),chosen=new Date(m.getFullYear(),m.getMonth()+delta,1,12);
+   selectCalendarDay(day(chosen));
+  });
  }
- byId('calendar-today').addEventListener('click',()=>{byId('calendar-day').value=day(new Date());clearCalendarForm();renderCalendar();window.GoogleCalendarModule?.onDateChange();});
- byId('calendar-show-hidden').addEventListener('change',renderCalendar);
- byId('calendar-show-private').addEventListener('change',renderCalendar);
- byId('event-kind').addEventListener('change',changeKindDefaults);
- byId('calendar-form').addEventListener('submit',saveCalendar);
- byId('calendar-cancel').addEventListener('click',clearCalendarForm);
- byId('calendar-list').addEventListener('click',handleCalendarList);
- byId('calendar-refresh').addEventListener('click',refreshCalendar);
- byId('weight-register').addEventListener('click',()=>{config.go('registrer');document.querySelector('[data-kind="weight"]')?.click();});
+ byId("calendar-today").addEventListener("click",()=>selectCalendarDay(day(new Date())));
+ byId("calendar-show-hidden").addEventListener("change",renderCalendar);
+ byId("calendar-show-private").addEventListener("change",renderCalendar);
+ byId("calendar-new").addEventListener("click",openCalendarEditor);
+ byId("event-kind").addEventListener("change",changeKindDefaults);
+ byId("calendar-form").addEventListener("submit",saveCalendar);
+ byId("calendar-cancel").addEventListener("click",()=>{clearCalendarForm();byId("calendar-editor").open=false;});
+ byId("calendar-list").addEventListener("click",handleCalendarList);
+ byId("calendar-refresh").addEventListener("click",refreshCalendar);
+ byId("weight-register").addEventListener("click",()=>{config.go("registrer");document.querySelector('[data-kind="weight"]')?.click();});
  renderWeights();renderCalendar();
 }
 function reset(){
- calendarEvents=[];eventEditing=null;loadingEvents=false;
+ calendarEvents=[];eventEditing=null;loadingEvents=false;calendarMonth=null;
  if(api){clearCalendarForm();renderCalendar();renderWeights();}
 }
-window.FamilyDashboard={init,refresh:()=>{renderWeights();void refreshCalendar();},onView:name=>{if(name==='kalender')void refreshCalendar();if(name==='vaegt')renderWeights();},beginNewEvent:()=>{if(api)clearCalendarForm();},reset};
+window.FamilyDashboard={init,refresh:()=>{renderWeights();void refreshCalendar();},onView:name=>{if(name==='kalender')void refreshCalendar();if(name==='vaegt')renderWeights();},beginNewEvent:()=>{if(api){clearCalendarForm();byId('calendar-editor').open=true;}},reset};
 })();
