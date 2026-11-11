@@ -8,7 +8,7 @@ const vm=require('node:vm');
 const root=path.resolve(__dirname,'..');
 const load=p=>fs.readFileSync(path.join(root,p),'utf8');
 const scripts=['family-dashboard.js','google-calendar.js','growth.js','home.js','household.js','food.js','health.js'];
-const assets=['index.html','manifest.webmanifest','sw.js','family-dashboard.css','household.css','health.css','google-setup.html',...scripts];
+const assets=['index.html','manifest.webmanifest','sw.js','family-dashboard.css','household.css','health.css','floral-theme.css','art/bee-logo.svg','art/meadow-header.svg','art/flower-sprig.svg','google-setup.html',...scripts];
 
 test('all necessary static assets exist and JavaScript parses',()=>{
  for(const file of assets)assert.ok(fs.existsSync(path.join(root,file)),file);
@@ -23,6 +23,26 @@ test('PWA caches every client module and index references all scripts',()=>{
  for(const f of scripts){assert.ok(html.includes('src="./'+f+'"'),f);assert.ok(sw.includes("'./"+f+"'"),f);}
  assert.ok(html.includes('href="./household.css"'));
 });
+test('flower and bee theme loads after module CSS and is precached',()=>{
+ const html=load('index.html'),sw=load('sw.js'),manifest=JSON.parse(load('manifest.webmanifest'));
+ const theme=load('floral-theme.css');
+ const cssFiles=['family-dashboard.css','household.css','health.css'];
+ assert.ok(html.includes('href="./floral-theme.css"'),'Theme stylesheet linked');
+ const i=html.indexOf('href="./floral-theme.css"');
+ for(const file of cssFiles)assert.ok(html.indexOf('href="./'+file+'"')<i,file+' loads before theme');
+ assert.ok(sw.includes("'./floral-theme.css'"),'Theme cached in PWA');
+ for(const file of ['art/bee-logo.svg','art/meadow-header.svg','art/flower-sprig.svg']){
+  const svg=load(file);
+  assert.match(svg,/<svg\s/);
+  assert.match(svg,/<\/svg>/);
+  assert.ok(sw.includes("'./"+file+"'"),file+' precached');
+ }
+ assert.ok(html.includes('src="./art/bee-logo.svg"'),'Brand uses bee logo');
+ assert.ok(theme.includes('--flower-pink')&&theme.includes('--honey')&&theme.includes('--lavender'),'Visual palette present');
+ assert.equal(manifest.theme_color,'#fff4e4');
+ assert.ok(manifest.icons.some(x=>x.src==='./art/bee-logo.svg'),'PWA points at bee icon');
+});
+
 test('all static HTML IDs are unique and main routes exist',()=>{
  const html=load('index.html');
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);
