@@ -8,6 +8,7 @@ Et mobilvenligt, fælles dashboard for Frederik og Batoul med Supabase Auth/RLS.
 |---|---|
 | Alinas log | Flasker, amning/timere, bleer, vejning, mælkeberegner, historik og backup af eksisterende log |
 | Vækst | WHO vægt-for-alder (piger) med percentil og referencekurver; egne grafer for længde og hovedomfang |
+| Alinas sundhedskalender | De danske standardundersøgelser og vaccinationer (5 uger til 12 år), egne sundhedsbesøg, booking, gennemført-status og frivillig tilføjelse til familiekalender |
 | Familiekalender | Månedsvisning med markører for aftaler, valgfri dagagenda, private/fælles aftaler, Google OAuth og separat fælles Google-kalender |
 | D-dråber og jern | Daglig registrering, tidsstempel, noter, fortryd og valgfri dosisplan |
 | Rengøring | Gentagne opgaver, ansvar (Begge/Frederik/Batoul), forfald, udført-historik og opgaveforslag |
@@ -23,6 +24,7 @@ Et mobilvenligt, fælles dashboard for Frederik og Batoul med Supabase Auth/RLS.
 - `index.html` – app shell, navigation og den eksisterende flaskelog
 - `family-dashboard.js` / `family-dashboard.css` – eksisterende kalender og vægtvisning
 - `growth.js` – WHO LMS og længde-/hovedomfangsregistreringer
+- `health.js` / `health.css` – sundhedskalender, officielle milepæle, booking, aftalelink og mobilvisning
 - `household.js` – supplementer og rengøring
 - `food.js` – indkøb, madplan og opskrifter
 - `home.js` – dags-overblik med genveje til registreringer og kalender
@@ -50,6 +52,26 @@ WHO-kilder:
 - https://www.who.int/tools/child-growth-standards/standards/weight-for-age
 - https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/indicators/weight-for-age/wfa-girls-0-13-zscores.pdf
 - https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/indicators/weight-for-age/wfa-girls-0-5-zscores.pdf
+
+## Alinas sundhedskalender (2026)
+
+Alina er født **6. oktober 2026**. Faste milepæle er beregnet ud fra fødselsdatoen, men er kun **vejledende tidspunkter – ingen automatisk booking**. Det er forældrenes ansvar at booke tidspunktet hos lægen.
+
+Standardprogrammet indeholder de syv undersøgelser ved 5 uger, 5 måneder, 12 måneder samt 2, 3, 4 og 5 år. Vaccinationerne: DiTeKiPol-Hib og pneumokok ved 3, 5 og 12 måneder; MFR ved 15 måneder og 4 år; difteri/stivkrampe/kighoste/polio ved 5 år; HPV-dosis 1 omkring 12 år og dosis 2 foreløbigt vist ca. 6 måneder senere (mindst 5 måneder fra den reelt givne første dosis; aftal med lægen).
+
+- Milestones beregnes statisk af `HealthModule.standards` med lokal kalenderdato; der oprettes ingen fiktive bookinger eller fuldførte vaccinationer.
+- Familien kan registrere en faktisk booket dato og klokkeslæt, forventet varighed, noter og dato for gennemført besøg. Gennemført-status registreres kun efter eksplicit handling.
+- Egne besøg kan oprettes til sundhedsplejerske, neonatalopfølgning eller andre kontroller uden at gætte en kommunal besøgsplan.
+- Kun ved separat godkendelse oprettes en aftale i `family_events` og muligvis Google-familiekalenderen. **Personlige sundhedsnoter sendes ikke til Google**, men titlen og tidspunktet er synligt på den fælles kalender.
+- Ændrede bookinger opdaterer tilknyttede kalenderaftaler. Et tilknyttet kalender-event skal fjernes via sundhedskalenderen, før bookingen ryddes.
+- Persistente data gemmes i `family_health_visits` med RLS baseret på `alina_members`. `calendar_event_id` har en familiebundet FK til `family_events`.
+- Dagens forside viser næste endnu ikke afsluttede besøg. Standardbesøg med tidligere vejledende dato markeres som **kontrollér om gennemført**, aldrig som fastslået udeblevet.
+- Programmet kan blive ændret, og individuelt tilpassede forløb aftales med lægen. Sundhedskalenderen er ikke en journal.
+
+Officielle kilder:
+- https://www.sst.dk/boernevaccination
+- https://www.sundhed.dk/borger/patienthaandbogen/boern/illustrationer/praesentationer/boerneundersoegelser-oversigt/
+- https://www.sundhed.dk/borger/patienthaandbogen/boern/undersoegelser/besoeg-af-sundhedsplejersken/
 
 ## D-dråber og jern
 
@@ -97,9 +119,10 @@ Testene kontrollerer scripts/assets, unikke IDs, alle routes, WHO-mediantabeller
 4. Registrér D-dråber/jern med ordineret dosis, og prøv fortryd.
 5. Opret, fuldfør og gentag en rengøringsopgave.
 6. Tilføj og afkryds en vare på begge telefoner.
-7. Opret en opskrift, planlæg den til aftensmad på en dag, og send ingredienser til indkøb. Bekræft at morgenmad og frokost ikke vises.
-8. Opret en aftale i `Familie` direkte i Google og synkronisér til dashboardet. Kontrollér på Batouls telefon.
-9. Kontrollér privat deling: en aftale filtreret på `piller` må ikke vises hos den anden.
+7. Opret en opskrift, planlæg den til aftensmad på en dag, og send ingredienser til indkøb.
+8. Åbn **Mere → Alinas sundhedskalender**. Kontrollér de forventede datoer. Registrér en reel tid eller gennemført dato, og tilføj frivilligt besøget til den fælles kalender. Kontrollér ændringen på begge telefoner. Bekræft at morgenmad og frokost ikke vises.
+9. Opret en aftale i `Familie` direkte i Google og synkronisér til dashboardet. Kontrollér på Batouls telefon.
+10. Kontrollér privat deling: en aftale filtreret på `piller` må ikke vises hos den anden.
 
 Forsiden er nu redesignet med fire prioriterede områder. Kontooplysninger ligger under **Indstillinger**, ikke på hver fane. Forsidens indhold kan justeres efter jeres erfaringer med daglig brug.
 
