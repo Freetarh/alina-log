@@ -294,7 +294,7 @@ function refresh(){if(active==="indkob"&&$("view-indkob").classList.contains("ac
 function reset(){
  items=[];recipes=[];meals=[];groEdit=null;recipeEdit=null;weekOffset=0;showChecked=true;searchText="";
  last={indkob:0,madplan:0};busy={indkob:false,madplan:false};active="";
- if(api){rootGro();rootFood();}
+ if(api){clearGro();clearRecipe();clearMeal();$("recipe-search").value="";$("gro-show-checked").checked=true;drawGro();renderWeek();renderRecipes();notice("gro-notice","");notice("meal-notice","");notice("recipe-notice","");}
 }
 window.FoodModule={init,onView,refresh,reset};
 })();
