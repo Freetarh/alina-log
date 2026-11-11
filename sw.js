@@ -1,5 +1,5 @@
 /* Cache for app shell only; private Supabase responses are never cached. */
-const CACHE='alina-cloud-shell-v6';
+const CACHE='alina-cloud-shell-v7';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./family-dashboard.js','./family-dashboard.css','./google-calendar.js','./google-setup.html'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x.startsWith('alina-cloud-shell-')&&x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
