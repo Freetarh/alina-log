@@ -759,7 +759,7 @@ async function importJSON(ev){
 }
 window.FamilyDashboard?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view});
  window.GrowthModule?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view});
- window.HomeModule?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view,openEntry:which=>{resetForm();setKind(which);view('registrer');}});
+ window.HomeModule?.init({client:supabaseClient,getState:()=>({user,family,entries,settings}),go:view,openEntry:which=>{resetForm();setKind(which);view('registrer');},openEvent:()=>{window.FamilyDashboard?.beginNewEvent();view('kalender');requestAnimationFrame(()=>$('calendar-form').scrollIntoView({behavior:'smooth',block:'start'}));}});
  window.HouseholdModule?.init({client:supabaseClient,getState:()=>({user,family}),go:view});
  window.FoodModule?.init({client:supabaseClient,getState:()=>({user,family}),go:view});
  window.GoogleCalendarModule?.init({client:supabaseClient,getState:()=>({user,family}),reloadCalendar:()=>window.FamilyDashboard?.refresh()});
