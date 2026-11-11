@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 let api=null, status=null, calendars=[],events=[], hiddenIds=new Set(), selectedCalendar='primary';
-let loading=false,lastSharedSync=0,viewActive=false,familyPersonalEvents=[];
+let loading=false,lastSharedSync=0,viewActive=false,familyPersonalEvents=[],hiddenKeywords=[];
 const $=id=>document.getElementById(id);
 const escapeText=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const day=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -70,13 +70,40 @@ async function refreshHidden(){
  if(error)throw error;
  hiddenIds=new Set((data||[]).map(x=>x.event_id));
 }
+async function loadKeywordFilters(){
+ const uid=state().user?.id;if(!uid)return;
+ const {data,error}=await api.client.from('google_calendar_filters').select('hidden_keywords')
+   .eq('user_id',uid).eq('calendar_id',selectedCalendar).maybeSingle();
+ if(error)throw error;
+ hiddenKeywords=(data?.hidden_keywords||[]).map(x=>String(x).trim()).filter(Boolean);
+ $('google-hide-keywords').value=hiddenKeywords.join(', ');
+}
+function isKeywordHidden(e){
+ const name=String(e.summary||'').toLowerCase();
+ return hiddenKeywords.some(word=>name.includes(word.toLowerCase()));
+}
+async function saveKeywordFilters(){
+ const uid=state().user?.id;if(!uid)return;
+ const raw=$('google-hide-keywords').value;
+ const words=[...new Set(raw.split(/[,\n;]/).map(x=>x.trim()).filter(Boolean))];
+ if(words.length>20||words.join(',').length>800){notice('Du kan gemme højst 20 nøgleord og maksimalt 800 tegn.',true);return;}
+ try{
+  const {error}=await api.client.from('google_calendar_filters').upsert({
+   user_id:uid,calendar_id:selectedCalendar,hidden_keywords:words,updated_at:new Date().toISOString()
+  },{onConflict:'user_id,calendar_id'});
+  if(error)throw error;
+  hiddenKeywords=words;renderPersonal();await loadFamilyPersonalEvents();
+  notice('Nøgleordsfilteret er gemt.');
+ }catch(e){notice('Kunne ikke gemme filter: '+errorText(e),true);}
+}
+
 async function loadPersonalEvents(){
  if(!status?.connected||!viewActive||!$('google-show-personal').checked)return;
  if(loading)return;
  loading=true;
  $('google-personal-list').innerHTML='<div class="empty">Henter dine Google-aftaler…</div>';
  try{
-  await refreshHidden();
+  await Promise.all([refreshHidden(),loadKeywordFilters()]);
   const data=await call('events',{calendar_id:selectedCalendar,day:$('calendar-day').value});
   if(!status?.connected)return;
   events=data.events||[];renderPersonal();
@@ -91,17 +118,19 @@ function renderPersonal(){
  }
  const selectedDay=$('calendar-day').value,showHidden=$('google-show-hidden').checked;
  const filtered=events.filter(e=>e.all_day?e.starts_at.slice(0,10)===selectedDay:day(new Date(e.starts_at))===selectedDay)
-  .filter(e=>showHidden||!hiddenIds.has(e.id));
+  .filter(e=>showHidden||(!hiddenIds.has(e.id)&&!isKeywordHidden(e)));
  $('google-personal-count').textContent=filtered.length+' personlige Google-aftaler';
  if(!filtered.length){target.innerHTML='<div class="empty">Ingen Google-aftaler vises denne dag.</div>';return;}
  target.innerHTML=filtered.map(e=>{
-  const hidden=hiddenIds.has(e.id);
+  const hidden=hiddenIds.has(e.id),byKeyword=isKeywordHidden(e);
   const d=new Date(e.starts_at);
   const when=e.all_day?'Hele dagen':clock(d);
   return '<div class="calendar-item"><div class="calendar-body"><div class="calendar-title">'+escapeText(e.summary)+'</div>'+
    '<div class="calendar-meta">'+escapeText(when)+' · Kun din Google-konto</div>'+
-   (hidden?'<span class="pill-tag">Skjult</span>':'')+'</div>'+
-   '<div class="calendar-actions"><button type="button" class="tiny-btn" data-google-hide="'+escapeText(e.id)+'">'+(hidden?'Vis':'Skjul')+'</button></div></div>';
+   (hidden?'<span class="pill-tag">Skjult manuelt</span>':'')+
+   (byKeyword?'<span class="pill-tag">Skjult af nøgleord</span>':'')+'</div>'+
+   (byKeyword?'<div class="calendar-actions"><span class="subtle small">Ret nøgleordsfilteret for at vise</span></div>':
+   '<div class="calendar-actions"><button type="button" class="tiny-btn" data-google-hide="'+escapeText(e.id)+'">'+(hidden?'Vis':'Skjul')+'</button></div>')+'</div>';
  }).join('');
 }
 async function toggleHidden(eventId){
@@ -228,6 +257,7 @@ function init(options){
  $('google-status-refresh').addEventListener('click',()=>void refreshStatus());
  $('google-show-personal').addEventListener('change',()=>{if($('google-show-personal').checked)void loadPersonalEvents();else renderPersonal();});
  $('google-show-hidden').addEventListener('change',renderPersonal);
+ $('google-save-filters').addEventListener('click',()=>void saveKeywordFilters());
  $('google-share-personal').addEventListener('change',async()=>{
    const requested=$('google-share-personal').checked;
    const ok=await setPersonalShare(requested);
@@ -253,8 +283,8 @@ function init(options){
  connectedUI();renderPersonal();
 }
 function reset(){
- status=null;calendars=[];events=[];familyPersonalEvents=[];hiddenIds=new Set();selectedCalendar='primary';viewActive=false;loading=false;lastSharedSync=0;
- if(api){notice('');connectedUI();renderPersonal();renderFamilyPersonalEvents();}
+ status=null;calendars=[];events=[];familyPersonalEvents=[];hiddenIds=new Set();hiddenKeywords=[];selectedCalendar='primary';viewActive=false;loading=false;lastSharedSync=0;
+ if(api){notice('');$('google-hide-keywords').value='';connectedUI();renderPersonal();renderFamilyPersonalEvents();}
 }
 window.GoogleCalendarModule={init,onCalendarView,onDateChange,reset,syncLocal,deleteLocal};
 })();
