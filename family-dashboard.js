@@ -158,5 +158,5 @@ function reset(){
  calendarEvents=[];eventEditing=null;loadingEvents=false;
  if(api){clearCalendarForm();renderCalendar();renderWeights();}
 }
-window.FamilyDashboard={init,refresh:()=>{renderWeights();void refreshCalendar();},onView:name=>{if(name==='kalender')void refreshCalendar();if(name==='vaegt')renderWeights();},reset};
+window.FamilyDashboard={init,refresh:()=>{renderWeights();void refreshCalendar();},onView:name=>{if(name==='kalender')void refreshCalendar();if(name==='vaegt')renderWeights();},beginNewEvent:()=>{if(api)clearCalendarForm();},reset};
 })();
