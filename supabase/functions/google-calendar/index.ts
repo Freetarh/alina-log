@@ -149,7 +149,7 @@ async function syncShared(user) {
  const {setting,token}=await authorizedShared(user);
  const now=Date.now();
  const from=new Date(now-180*86400000).toISOString(),to=new Date(now+540*86400000).toISOString();
- let page="",imported=0,updated=0,skipped=0;const seen=new Set();
+ let page="",imported=0,updated=0,removed=0,skipped=0,pages=0;const seen=new Set();
  do {
   const params=new URLSearchParams({timeMin:from,timeMax:to,singleEvents:"true",orderBy:"startTime",maxResults:"250"});
   if(page)params.set("pageToken",page);
@@ -159,16 +159,16 @@ async function syncShared(user) {
    const dates=appointmentDates(g);if(!dates){skipped++;continue;}
    seen.add(g.id);
    const {data:existing,error:lookError}=await admin.from("family_events")
-      .select("id,google_updated_at,google_dirty,visibility,show_on_family_calendar")
+      .select("id,google_updated_at,google_dirty,google_removed_at,visibility,show_on_family_calendar")
       .eq("family_id",user.family_id).eq("google_calendar_id",setting.google_calendar_id).eq("google_event_id",g.id).maybeSingle();
    if(lookError)throw lookError;
    const googleUpdated=g.updated||new Date().toISOString();
    const updatedData={title:String(g.summary||"Aftale").slice(0,120),
      details:String(g.description||"").slice(0,500),...dates,
-     google_updated_at:googleUpdated,google_etag:g.etag||null,google_all_day:!!g.start?.date};
+     google_updated_at:googleUpdated,google_etag:g.etag||null,google_all_day:!!g.start?.date,google_removed_at:null};
    if(existing){
      if(existing.google_dirty){skipped++;continue;}
-     if(existing.google_updated_at&&Date.parse(existing.google_updated_at)>=Date.parse(googleUpdated))continue;
+     if(!existing.google_removed_at&&existing.google_updated_at&&Date.parse(existing.google_updated_at)>=Date.parse(googleUpdated))continue;
      const {error}=await admin.from("family_events").update(updatedData).eq("id",existing.id);
      if(error)throw error;updated++;
    }else{
@@ -180,10 +180,25 @@ async function syncShared(user) {
    }
   }
   page=data.nextPageToken||"";
- }while(page&&seen.size<1500);
+  pages++;
+ }while(page&&pages<10);
+ if(page)throw new Error("Den fælles kalender indeholder for mange aftaler til én synkronisering. Ingen fjernelser er udført.");
+ // Mark events removed from Google as inactive instead of deleting local history.
+ // Only compare mapped events within the fully fetched date range.
+ const {data:linked,error:linkedError}=await admin.from("family_events")
+   .select("id,google_event_id,google_dirty,google_removed_at")
+   .eq("family_id",user.family_id).eq("google_calendar_id",setting.google_calendar_id)
+   .gte("starts_at",from).lt("starts_at",to).not("google_event_id","is",null)
+   .limit(2000);
+ if(linkedError)throw linkedError;
+ for(const local of linked||[]){
+   if(!local.google_dirty&&!local.google_removed_at&&!seen.has(local.google_event_id)){
+     const {error}=await admin.from("family_events").update({google_removed_at:new Date().toISOString()}).eq("id",local.id);
+     if(error)throw error;removed++;
+   }
+ }
  await admin.from("family_google_calendar_settings").update({last_synced_at:new Date().toISOString()}).eq("family_id",user.family_id);
- // We never delete local records from a missing remote result automatically.
- return {imported,updated,skipped,range:"180 dage tilbage og 540 dage frem",google_calendar:setting.google_calendar_name};
+ return {imported,updated,removed,skipped,range:"180 dage tilbage og 540 dage frem",google_calendar:setting.google_calendar_name};
 }
 async function pushFamilyEvent(user,id) {
  const {data:e,error}=await admin.from("family_events").select("*").eq("id",id).eq("family_id",user.family_id).maybeSingle();
@@ -206,7 +221,7 @@ async function pushFamilyEvent(user,id) {
  const {error:saveError}=await admin.from("family_events").update({
    google_calendar_id:setting.google_calendar_id,google_event_id:googleEvent.id,
    google_etag:googleEvent.etag||null,google_updated_at:googleEvent.updated||new Date().toISOString(),
-   google_dirty:false,google_all_day:false
+   google_dirty:false,google_all_day:false,google_removed_at:null
  }).eq("id",e.id).eq("family_id",user.family_id);
  if(saveError)throw saveError;
  return {synced:true};
